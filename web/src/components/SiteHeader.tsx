@@ -30,7 +30,7 @@ export function SiteHeader({ onRestart }: { onRestart?: () => void }) {
           </button>
         ) : null}
         <a
-          href="https://zx50416.github.io/WikiNB-KCIS/"
+          href="https://kainnne.github.io/WikiNB-KCIS/"
           target="_blank"
           rel="noreferrer"
           className="kc-btn-wikinb"

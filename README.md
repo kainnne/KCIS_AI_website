@@ -4,7 +4,7 @@
 
 ## 線上網站
 
-**https://zx50416.github.io/KCIS_AI_website/**
+**https://kainnne.github.io/KCIS_AI_website/**
 
 ## 本機執行
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ADMIN_DEPARTMENTS,
   getComplexity,
@@ -30,6 +30,25 @@ const initialNeed = (locale: UserNeed["locale"]): UserNeed => ({
   locale,
 });
 
+function IntroSplash({ onDone }: { onDone: () => void }) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(onDone, reducedMotion ? 500 : 3300);
+    return () => window.clearTimeout(timer);
+  }, [onDone]);
+
+  return (
+    <button className="intro-splash" type="button" onClick={onDone} aria-label="略過開場動畫">
+      <picture>
+        <source media="(orientation: portrait)" srcSet={`${basePath}/intro-portrait.png`} />
+        <img src={`${basePath}/intro-landscape.png`} alt="" />
+      </picture>
+    </button>
+  );
+}
+
 function progressSteps(role: Role | null): WizardStep[] {
   if (role === "admin") {
     return ["role", "department", "task", "keywords", "details"];
@@ -41,6 +60,7 @@ export function NavigatorApp() {
   const { t, locale } = useI18n();
   const reduce = useReducedMotion();
   const [step, setStep] = useState<WizardStep>("welcome");
+  const [showIntro, setShowIntro] = useState(true);
   const [need, setNeed] = useState<UserNeed>(() => initialNeed(locale));
   const tools = useMemo(() => getTools(), []);
 
@@ -99,6 +119,7 @@ export function NavigatorApp() {
 
   return (
     <div className="kc-shell">
+      {showIntro && <IntroSplash onDone={() => setShowIntro(false)} />}
       <DecorBackground />
       <SiteHeader onRestart={step === "welcome" ? undefined : restart} />
 

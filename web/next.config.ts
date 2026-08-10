@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-/** GitHub Pages: https://zx50416.github.io/KCIS_AI_website/ */
+/** GitHub Pages: https://kainnne.github.io/KCIS_AI_website/ */
 const isGithubPages = process.env.GITHUB_PAGES === "true";
 const basePath = isGithubPages ? "/KCIS_AI_website" : "";
 
