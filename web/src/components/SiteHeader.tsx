@@ -8,10 +8,10 @@ const asset = (path: string) =>
   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path.startsWith("/") ? path : `/${path}`}`;
 
 export function SiteHeader({ onRestart }: { onRestart?: () => void }) {
-  const { t, toggleLocale } = useI18n();
+  const { t, locale, setLocale } = useI18n();
 
   return (
-    <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+    <header className="kc-site-header mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
       <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label={t.meta.brand}>
         <Image
           src={asset("/brand/kangchiao-logo.png")}
@@ -30,16 +30,33 @@ export function SiteHeader({ onRestart }: { onRestart?: () => void }) {
           </button>
         ) : null}
         <a
-          href="https://kainnne.github.io/WikiNB-KCIS/"
+          href="https://kainnne.com/"
           target="_blank"
           rel="noreferrer"
-          className="kc-btn-wikinb"
+          className="kc-btn-kainnne"
         >
-          {t.nav.wikiNb}
+          <span className="kc-kainnne-dot" aria-hidden />
+          <span>Kainnne</span>
+          <span aria-hidden>↗</span>
         </a>
-        <button type="button" className="kc-btn-ghost" onClick={toggleLocale}>
-          {t.nav.language}
-        </button>
+        <div className="kc-language-switch" role="group" aria-label="Site language">
+          <button
+            type="button"
+            className={locale === "en" ? "is-active" : ""}
+            aria-pressed={locale === "en"}
+            onClick={() => setLocale("en")}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            className={locale === "zh-TW" ? "is-active" : ""}
+            aria-pressed={locale === "zh-TW"}
+            onClick={() => setLocale("zh-TW")}
+          >
+            中文
+          </button>
+        </div>
       </div>
     </header>
   );

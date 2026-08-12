@@ -31,6 +31,7 @@ export function OptionCard({
   return (
     <motion.button
       type="button"
+      whileHover={reduce ? undefined : { y: -6, scale: 1.012 }}
       whileTap={reduce ? undefined : { scale: 0.98 }}
       onClick={onClick}
       className={`kc-card kc-choice relative w-full overflow-hidden text-left transition ${
@@ -42,6 +43,7 @@ export function OptionCard({
         {title}
       </span>
       {hint ? <span className="relative z-[1] mt-1 block text-sm text-kc-muted">{hint}</span> : null}
+      <span className="kc-choice-arrow" aria-hidden>↗</span>
     </motion.button>
   );
 }

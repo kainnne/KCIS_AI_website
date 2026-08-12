@@ -14,7 +14,7 @@
     "restart": "再選一次",
     "tools": "工具介紹",
     "language": "English",
-    "wikiNb": "WikiNB",
+    "creatorSite": "Kainnne",
     "copy": "複製起來",
     "copied": "複製好了！",
     "openOfficial": "打開官方網站",
@@ -145,7 +145,11 @@
     "subtitle": "點下面的提示，改一改，再複製到 AI 裡用。",
     "openGemini": "打開 Gemini",
     "openChatGPT": "打開 ChatGPT",
-    "openKuse": "打開 Kuse"
+    "openKuse": "打開 Kuse",
+    "launchTitle": "選一個 AI 工作空間繼續",
+    "kuseHint": "康軒學習工作空間",
+    "chatGptHint": "彈性的 AI 工作空間",
+    "geminiHint": "Google AI 工作空間"
   },
   "footer": ""
 }

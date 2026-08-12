@@ -100,6 +100,7 @@ export function ResultsPanel({
             key={item.id}
             initial={reduce ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={reduce ? undefined : { y: -7, scale: 1.012 }}
             transition={{ delay: reduce ? 0 : index * 0.08 }}
             className={`kc-card kc-choice relative flex flex-col overflow-hidden p-4 sm:p-5 ${
               item.pinnedCore ? "kc-core-card" : ""
@@ -185,7 +186,7 @@ export function ResultsPanel({
         </p>
       ) : null}
 
-      <div className="kc-card kc-choice relative mt-8 overflow-hidden p-4 sm:p-6">
+      <div className="kc-card kc-prompt-studio relative mt-8 overflow-hidden p-4 sm:p-6">
         <span className="kc-sparkles" aria-hidden>
           <span className="kc-sparkle kc-sparkle-b">✧</span>
         </span>
@@ -220,39 +221,56 @@ export function ResultsPanel({
           placeholder={buildPrompt(need)}
         />
 
-        <div className="relative z-[1] mt-4 flex flex-wrap gap-2">
+        <div className="relative z-[1] mt-5 flex flex-wrap gap-2">
           <button type="button" className="kc-btn-primary" onClick={refreshPrompt}>
             {t.nav.generatePrompt}
           </button>
           <button type="button" className="kc-btn-ghost" onClick={copyPrompt}>
             {copied ? t.nav.copied : t.nav.copy}
           </button>
-          <a
-            href="https://gemini.google.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="kc-btn-ghost"
-          >
-            {t.prompt.openGemini}
-          </a>
-          <a
-            href="https://chatgpt.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="kc-btn-ghost"
-          >
-            {t.prompt.openChatGPT}
-          </a>
-          <a
-            href="https://kuse.knsh.com.tw/"
-            target="_blank"
-            rel="noreferrer"
-            className="kc-btn-kuse"
-          >
-            {t.prompt.openKuse}
-          </a>
+        </div>
+
+        <div className="kc-launch-area relative z-[1] mt-6">
+          <p className="kc-launch-label">{t.prompt.launchTitle}</p>
+          <div className="kc-launch-grid">
+            <LaunchLink href="https://kuse.knsh.com.tw/" name="Kuse" hint={t.prompt.kuseHint} featured />
+            <LaunchLink href="https://chatgpt.com/" name="ChatGPT" hint={t.prompt.chatGptHint} />
+            <LaunchLink href="https://gemini.google.com/" name="Gemini" hint={t.prompt.geminiHint} />
+          </div>
         </div>
       </div>
     </motion.section>
+  );
+}
+
+function LaunchLink({
+  href,
+  name,
+  hint,
+  featured = false,
+}: {
+  href: string;
+  name: string;
+  hint: string;
+  featured?: boolean;
+}) {
+  const reduce = useReducedMotion();
+
+  return (
+    <motion.a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`kc-launch-link ${featured ? "kc-launch-featured" : ""}`}
+      whileHover={reduce ? undefined : { y: -4, scale: 1.015 }}
+      whileTap={reduce ? undefined : { scale: 0.98 }}
+    >
+      <span className="kc-launch-monogram" aria-hidden>{name.slice(0, 1)}</span>
+      <span className="min-w-0">
+        <strong>{name}</strong>
+        <small>{hint}</small>
+      </span>
+      <span className="kc-launch-arrow" aria-hidden>↗</span>
+    </motion.a>
   );
 }

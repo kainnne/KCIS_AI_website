@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -29,7 +30,11 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("zh-TW");
+  const [locale, setLocale] = useState<Locale>("en");
+
+  useEffect(() => {
+    document.documentElement.lang = locale === "en" ? "en" : "zh-Hant";
+  }, [locale]);
 
   const toggleLocale = useCallback(() => {
     setLocale((prev) => (prev === "zh-TW" ? "en" : "zh-TW"));

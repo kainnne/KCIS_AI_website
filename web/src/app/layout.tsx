@@ -20,13 +20,28 @@ const body = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
-  title: "康橋 AI 應用導航",
-  description: "幫老師與學生快速找到合適的 AI 與數位工具，並準備好可用的提示詞。",
+  metadataBase: new URL("https://ai-tools.kcis.kainnne.com"),
+  title: "Kang Chiao AI Navigator",
+  description: "Find the right AI tools for teaching, learning, and school administration.",
+  openGraph: {
+    title: "Kang Chiao AI Navigator",
+    description: "Find the right AI tools for teaching, learning, and school administration.",
+    url: "/",
+    siteName: "Kang Chiao AI Navigator",
+    images: [{ url: "/og.png", width: 1731, height: 909, alt: "Kang Chiao AI Navigator" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kang Chiao AI Navigator",
+    description: "Find the right AI tools for teaching, learning, and school administration.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-Hant">
+    <html lang="en">
       <body className={`${display.variable} ${body.variable} antialiased`}>
         <I18nProvider>{children}</I18nProvider>
       </body>

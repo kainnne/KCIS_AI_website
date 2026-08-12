@@ -14,7 +14,7 @@
     "restart": "Try again",
     "tools": "Tool pages",
     "language": "繁體中文",
-    "wikiNb": "WikiNB",
+    "creatorSite": "Kainnne",
     "copy": "Copy",
     "copied": "Copied!",
     "openOfficial": "Open official site",
@@ -145,7 +145,11 @@
     "subtitle": "Tap a hint, edit if you like, then copy it into an AI tool.",
     "openGemini": "Open Gemini",
     "openChatGPT": "Open ChatGPT",
-    "openKuse": "Open Kuse"
+    "openKuse": "Open Kuse",
+    "launchTitle": "Continue in an AI workspace",
+    "kuseHint": "Kang Hsuan learning workspace",
+    "chatGptHint": "Flexible AI workspace",
+    "geminiHint": "Google AI workspace"
   },
   "footer": ""
 }

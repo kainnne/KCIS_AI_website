@@ -14,6 +14,8 @@ import { rankTools } from "@/lib/scoring";
 import { getTools } from "@/lib/tools";
 import type { Department, Role, UserNeed, WizardStep } from "@/lib/types";
 import { DecorBackground } from "./DecorBackground";
+import { InteractiveField } from "./InteractiveField";
+import { InteractiveHero } from "./InteractiveHero";
 import { OptionCard, StepPanel } from "./OptionCard";
 import { ProgressBar } from "./ProgressBar";
 import { ResultsPanel } from "./ResultsPanel";
@@ -100,6 +102,7 @@ export function NavigatorApp() {
   return (
     <div className="kc-shell">
       <DecorBackground />
+      <InteractiveField />
       <SiteHeader onRestart={step === "welcome" ? undefined : restart} />
 
       {step !== "welcome" && step !== "results" ? (
@@ -114,34 +117,21 @@ export function NavigatorApp() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduce ? undefined : { opacity: 0, y: -12 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6 sm:py-6"
+            className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-8"
           >
-            <div className="kc-hero relative overflow-hidden rounded-[1.75rem] border border-kc-blue/10 shadow-soft">
-              <div className="kc-hero-glow" aria-hidden />
-              <span className="kc-sparkles" aria-hidden>
-                <span className="kc-sparkle kc-sparkle-a">✦</span>
-                <span className="kc-sparkle kc-sparkle-b">✧</span>
-                <span className="kc-diamond">◇</span>
-                <span className="kc-hero-orb kc-hero-orb-a" />
-                <span className="kc-hero-orb kc-hero-orb-b" />
-              </span>
-
-              <div className="relative z-[1] flex flex-col items-center px-6 py-14 text-center sm:px-10 sm:py-20">
-                <h1 className="font-display max-w-xl text-[1.85rem] font-bold leading-tight tracking-tight text-kc-blue-deep sm:text-4xl sm:leading-tight">
-                  {t.welcome.title}
-                </h1>
-                <p className="mt-4 max-w-md text-sm leading-relaxed text-kc-muted sm:text-base">
-                  {t.welcome.subtitle}
-                </p>
-                <button
-                  type="button"
-                  className="kc-btn-hero mt-10"
-                  onClick={() => go("role")}
-                >
-                  {t.welcome.cta}
-                </button>
-              </div>
-            </div>
+            <InteractiveHero
+              eyebrow={t.meta.tagline}
+              title={t.welcome.title}
+              subtitle={t.welcome.subtitle}
+              cta={t.welcome.cta}
+              labels={[
+                t.roles.teacher.label.replace(/^(I'm|我是)\s*/, ""),
+                t.roles.student.label.replace(/^(I'm|我是)\s*/, ""),
+                t.roles.admin.label.replace(/^(I'm|我是)\s*/, ""),
+                "AI tools",
+              ]}
+              onStart={() => go("role")}
+            />
           </motion.section>
         ) : null}
 
