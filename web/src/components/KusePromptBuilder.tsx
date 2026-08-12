@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import {
   buildKusePrompt,
+  buildPromptDesignNotes,
   FORMAT_LABELS,
   REQUIREMENT_LABELS,
   SOURCE_LABELS,
@@ -13,10 +14,12 @@ import {
   type KusePromptInput,
   type KuseRequirement,
   type KuseRole,
+  type KuseSiteScope,
   type KuseSource,
   type KuseTaskKind,
   type KuseTone,
 } from "@/lib/kusePrompt";
+import { recommendKuseModels } from "@/lib/modelRecommendation";
 import type { Locale } from "@/lib/types";
 import { OptionCard, StepPanel } from "./OptionCard";
 import { ProgressBar } from "./ProgressBar";
@@ -58,6 +61,21 @@ const ROLE_REQUIREMENTS: Record<KuseRole, KuseRequirement[]> = {
   admin: ["action_items", "owners_deadlines", "review_markers", "source_notes", "privacy_check"],
 };
 
+function requirementOptions(role: KuseRole, taskKind: KuseTaskKind): KuseRequirement[] {
+  if (taskKind === "website") {
+    return ["shareable_page", "mobile_first", "working_actions", "source_alignment", "privacy_check"];
+  }
+  if (taskKind === "assessment") {
+    return ["learning_objectives", "answer_key", "differentiation", "source_alignment", "privacy_check"];
+  }
+  if (taskKind === "presentation") {
+    return role === "teacher"
+      ? ["learning_objectives", "speaker_notes", "source_alignment", "privacy_check"]
+      : ["speaker_notes", "source_notes", "review_markers", "privacy_check"];
+  }
+  return ROLE_REQUIREMENTS[role];
+}
+
 const FORMATS: KuseFormat[] = ["structured", "table", "slides", "webpage", "checklist", "notice"];
 const TONES: KuseTone[] = ["clear", "friendly", "formal", "concise"];
 const DEFAULT_FORMAT_BY_TASK: Partial<Record<KuseTaskKind, KuseFormat>> = {
@@ -85,6 +103,9 @@ function initialInput(locale: Locale): KusePromptInput {
     problemToSolve: "",
     primaryAction: "",
     visualStyle: "",
+    siteScope: "mvp",
+    mustIncludeContent: "",
+    linksAndActions: "",
     outputLanguage: locale,
   };
 }
@@ -157,6 +178,37 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
     () => TASK_OPTIONS[input.role].find((option) => option.id === input.taskKind)?.label[locale] ?? "",
     [input.role, input.taskKind, locale],
   );
+  const modelRecommendation = useMemo(
+    () => recommendKuseModels(input, locale),
+    [input, locale],
+  );
+  const promptDesignNotes = useMemo(
+    () => buildPromptDesignNotes(input, locale),
+    [input, locale],
+  );
+
+  function selectTask(taskKind: KuseTaskKind, taskLabel: string) {
+    const isWebsite = taskKind === "website";
+    setInput((current) => ({
+      ...current,
+      taskKind,
+      task: taskKind === "other" ? "" : taskLabel,
+      amount: isWebsite ? (locale === "zh-TW" ? "一頁式，4–6 個必要區塊" : "One page with 4–6 essential sections") : "",
+      format: DEFAULT_FORMAT_BY_TASK[taskKind] ?? null,
+      requirements: isWebsite ? ["shareable_page", "mobile_first", "working_actions"] : [],
+      siteScope: "mvp",
+    }));
+  }
+
+  function selectSiteScope(siteScope: KuseSiteScope) {
+    setInput((current) => ({
+      ...current,
+      siteScope,
+      amount: siteScope === "mvp"
+        ? (locale === "zh-TW" ? "一頁式，4–6 個必要區塊" : "One page with 4–6 essential sections")
+        : (locale === "zh-TW" ? "先完成核心頁面，再分階段擴充" : "Core pages first, then expand in stages"),
+    }));
+  }
 
   return (
     <main className="kc-builder-shell">
@@ -196,12 +248,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                   key={option.id}
                   className={`kc-task-preset ${input.taskKind === option.id ? "is-active" : ""}`}
                   aria-pressed={input.taskKind === option.id}
-                  onClick={() => setInput((current) => ({
-                    ...current,
-                    taskKind: option.id,
-                    task: option.id === "other" ? "" : option.label[locale],
-                    format: DEFAULT_FORMAT_BY_TASK[option.id] ?? null,
-                  }))}
+                  onClick={() => selectTask(option.id, option.label[locale])}
                 >
                   {option.label[locale]}
                 </button>
@@ -268,10 +315,10 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
               />
               <BuilderInput
                 id="kuse-amount"
-                label={t.kuseBuilder.specs.amount}
+                label={input.taskKind === "website" ? t.kuseBuilder.website.size : t.kuseBuilder.specs.amount}
                 value={input.amount}
                 onChange={(amount) => setInput((current) => ({ ...current, amount }))}
-                placeholder={t.kuseBuilder.specs.amountPlaceholder}
+                placeholder={input.taskKind === "website" ? t.kuseBuilder.website.sizePlaceholder : t.kuseBuilder.specs.amountPlaceholder}
               />
             </div>
 
@@ -282,6 +329,28 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 className="kc-website-specs"
               >
                 <p className="kc-builder-section-label">{t.kuseBuilder.website.title}</p>
+                <div className="kc-site-scope-grid">
+                  <button
+                    type="button"
+                    className={`kc-site-scope ${input.siteScope === "mvp" ? "is-active" : ""}`}
+                    aria-pressed={input.siteScope === "mvp"}
+                    onClick={() => selectSiteScope("mvp")}
+                  >
+                    <span>{t.kuseBuilder.website.mvpBadge}</span>
+                    <strong>{t.kuseBuilder.website.mvp}</strong>
+                    <small>{t.kuseBuilder.website.mvpHint}</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`kc-site-scope ${input.siteScope === "complete" ? "is-active" : ""}`}
+                    aria-pressed={input.siteScope === "complete"}
+                    onClick={() => selectSiteScope("complete")}
+                  >
+                    <span>{t.kuseBuilder.website.completeBadge}</span>
+                    <strong>{t.kuseBuilder.website.complete}</strong>
+                    <small>{t.kuseBuilder.website.completeHint}</small>
+                  </button>
+                </div>
                 <div className="kc-spec-grid">
                   <BuilderInput
                     id="kuse-problem"
@@ -305,6 +374,24 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                   onChange={(visualStyle) => setInput((current) => ({ ...current, visualStyle }))}
                   placeholder={t.kuseBuilder.website.stylePlaceholder}
                 />
+                <div className="kc-spec-grid">
+                  <BuilderTextarea
+                    id="kuse-content"
+                    label={t.kuseBuilder.website.content}
+                    value={input.mustIncludeContent}
+                    onChange={(mustIncludeContent) => setInput((current) => ({ ...current, mustIncludeContent }))}
+                    placeholder={t.kuseBuilder.website.contentPlaceholder}
+                    compact
+                  />
+                  <BuilderTextarea
+                    id="kuse-links"
+                    label={t.kuseBuilder.website.links}
+                    value={input.linksAndActions}
+                    onChange={(linksAndActions) => setInput((current) => ({ ...current, linksAndActions }))}
+                    placeholder={t.kuseBuilder.website.linksPlaceholder}
+                    compact
+                  />
+                </div>
               </motion.div>
             ) : null}
 
@@ -333,7 +420,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
             </ChoiceGroup>
 
             <ChoiceGroup label={t.kuseBuilder.specs.mustInclude}>
-              {ROLE_REQUIREMENTS[input.role].map((requirement) => (
+              {requirementOptions(input.role, input.taskKind).map((requirement) => (
                 <ChoiceButton
                   key={requirement}
                   active={input.requirements.includes(requirement)}
@@ -401,6 +488,63 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
               />
               <SummaryItem label={t.kuseBuilder.summary.output} value={input.outputLanguage === "en" ? "English" : "繁體中文"} />
             </div>
+
+            <section className="kc-model-guide" aria-labelledby="kuse-model-guide-title">
+              <div className="kc-model-guide-head">
+                <div>
+                  <p className="kc-builder-section-label">{t.kuseBuilder.model.eyebrow}</p>
+                  <h3 id="kuse-model-guide-title">{t.kuseBuilder.model.title}</h3>
+                </div>
+                <span>{t.kuseBuilder.model.qualityFirst}</span>
+              </div>
+              <p className="kc-model-method">{modelRecommendation.method}</p>
+              <div className="kc-model-grid">
+                <article className="kc-model-card is-primary">
+                  <span>{t.kuseBuilder.model.recommended}</span>
+                  <strong>{modelRecommendation.recommended.name}</strong>
+                  <p>{modelRecommendation.recommended.explanation}</p>
+                </article>
+                <article className="kc-model-card">
+                  <span>{modelRecommendation.alternativeLabel}</span>
+                  <strong>{modelRecommendation.alternative.name}</strong>
+                  <p>{modelRecommendation.alternative.explanation}</p>
+                </article>
+              </div>
+              <div className="kc-model-signals">
+                <span>{t.kuseBuilder.model.signals}</span>
+                {modelRecommendation.signals.map((signal) => <small key={signal}>{signal}</small>)}
+              </div>
+              <p className="kc-model-note">{modelRecommendation.availabilityNote}</p>
+            </section>
+
+            <details className="kc-prompt-learning">
+              <summary>
+                <span className="kc-learning-mark" aria-hidden>?</span>
+                <span>
+                  <strong>{t.kuseBuilder.learning.title}</strong>
+                  <small>{t.kuseBuilder.learning.hint}</small>
+                </span>
+                <span className="kc-learning-chevron" aria-hidden>⌄</span>
+              </summary>
+              <div className="kc-learning-body">
+                <p>{t.kuseBuilder.learning.intro}</p>
+                <ol>
+                  {promptDesignNotes.map((note) => (
+                    <li key={note.title}>
+                      <strong>{note.title}</strong>
+                      <span>{note.body}</span>
+                    </li>
+                  ))}
+                </ol>
+                <div className="kc-learning-transfer">
+                  <strong>{t.kuseBuilder.learning.transferTitle}</strong>
+                  <p>{t.kuseBuilder.learning.transferBody}</p>
+                  <div>
+                    {t.kuseBuilder.learning.framework.map((item) => <span key={item}>{item}</span>)}
+                  </div>
+                </div>
+              </div>
+            </details>
 
             <div className="kc-card kc-kuse-result-card">
               <label htmlFor="kuse-result-prompt">{t.kuseBuilder.result.promptLabel}</label>

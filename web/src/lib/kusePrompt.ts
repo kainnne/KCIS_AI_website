@@ -34,6 +34,7 @@ export type KuseFormat =
   | "checklist"
   | "notice";
 export type KuseTone = "clear" | "friendly" | "formal" | "concise";
+export type KuseSiteScope = "mvp" | "complete";
 export type KuseRequirement =
   | "learning_objectives"
   | "teaching_steps"
@@ -44,7 +45,11 @@ export type KuseRequirement =
   | "owners_deadlines"
   | "review_markers"
   | "source_notes"
-  | "privacy_check";
+  | "privacy_check"
+  | "speaker_notes"
+  | "mobile_first"
+  | "working_actions"
+  | "shareable_page";
 
 export type KusePromptInput = {
   role: KuseRole;
@@ -61,10 +66,18 @@ export type KusePromptInput = {
   problemToSolve: string;
   primaryAction: string;
   visualStyle: string;
+  siteScope: KuseSiteScope;
+  mustIncludeContent: string;
+  linksAndActions: string;
   outputLanguage: Locale;
 };
 
 type LabelMap<T extends string> = Record<T, Record<Locale, string>>;
+
+export type PromptDesignNote = {
+  title: string;
+  body: string;
+};
 
 export const SOURCE_LABELS: LabelMap<KuseSource> = {
   kuse_textbook: { en: "Kang Hsuan textbook / chapter", "zh-TW": "康軒教材／章節" },
@@ -104,6 +117,10 @@ export const REQUIREMENT_LABELS: LabelMap<KuseRequirement> = {
   review_markers: { en: "Mark items needing review", "zh-TW": "標記需確認內容" },
   source_notes: { en: "Source / evidence notes", "zh-TW": "來源／依據註記" },
   privacy_check: { en: "Privacy check", "zh-TW": "個資檢查" },
+  speaker_notes: { en: "Speaker notes", "zh-TW": "講者備註" },
+  mobile_first: { en: "Mobile-first layout", "zh-TW": "手機優先版面" },
+  working_actions: { en: "Working buttons and links", "zh-TW": "可正常使用的按鈕與連結" },
+  shareable_page: { en: "A shareable Kuse Page", "zh-TW": "可分享的 Kuse Page" },
 };
 
 function selectedLabels<T extends string>(
@@ -118,6 +135,86 @@ function field(value: string, fallback: string) {
   return value.trim() || fallback;
 }
 
+export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): PromptDesignNote[] {
+  const sources = selectedLabels(input.sources, SOURCE_LABELS, locale);
+  const format = input.format ? FORMAT_LABELS[input.format][locale] : "";
+  const requirements = selectedLabels(input.requirements, REQUIREMENT_LABELS, locale);
+
+  if (locale === "zh-TW") {
+    const notes: PromptDesignNote[] = [
+      {
+        title: "先界定角色與單一任務",
+        body: `我把 AI 的角色限定為${input.role === "teacher" ? "教學設計夥伴" : "校務工作夥伴"}，並要求一次只完成「${field(input.task, "這項任務")}」，避免回答在過程中擴張成一堆不需要的成品。`,
+      },
+      {
+        title: "把材料變成事實邊界",
+        body: sources
+          ? `我指定優先依據為「${sources}」，同時禁止自行補造日期、數據、規定與引用。這能降低內容看似完整、其實沒有根據的風險。`
+          : "目前沒有指定材料，所以我要求 Kuse 在需要事實時先索取資料，而不是自行猜測。",
+      },
+      {
+        title: "把模糊需求改成完成判準",
+        body: `我補上使用對象「${field(input.audience, "待確認")}」、規模「${field(input.amount, "待確認")}」${format ? `、格式「${format}」` : ""}${requirements ? `，並列出「${requirements}」等必要內容` : ""}。這些條件讓我們可以檢查成品是否真的可用。`,
+      },
+    ];
+
+    if (input.taskKind === "website") {
+      notes.push({
+        title: input.siteScope === "mvp" ? "先做可用的 MVP" : "分階段完成完整版本",
+        body: input.siteScope === "mvp"
+          ? "我把網站限制為一頁、4–6 個必要區塊與一個主要行動，先證明它有用，再決定是否擴充；也排除登入、資料庫與未要求的複雜功能。"
+          : "我要求先交付可用核心頁面，再逐步補次要頁面與功能，避免一次把需求擴張成難以完成的大型系統。",
+      });
+      notes.push({
+        title: "指定真正可分享的交付物",
+        body: "我明確要求使用 Kuse Web Page／AI Pages，不接受獨立 HTML 或簡報；成品完成後走 Kuse 內建發布流程。畫面出現「Publish now」時由使用者點一次，完成後取得公開網址，不需要到其他平台部署。",
+      });
+    }
+
+    notes.push({
+      title: "保留人工判斷的位置",
+      body: "我要求缺少依據的正確性、日期、法規與引用標示為「待人工查證」，並排除真實學生與人事敏感資料。結構化 Prompt 是協作規格，不是把專業責任交給 AI。",
+    });
+    return notes;
+  }
+
+  const notes: PromptDesignNote[] = [
+    {
+      title: "Define one role and one task",
+      body: `I constrained the AI to act as ${input.role === "teacher" ? "an instructional design partner" : "a school operations partner"} and complete only “${field(input.task, "this task")}.” This prevents the response from expanding into unrelated deliverables.`,
+    },
+    {
+      title: "Turn sources into factual boundaries",
+      body: sources
+        ? `I prioritized “${sources}” and prohibited invented dates, figures, policy, and citations. This reduces polished-looking content that has no evidence.`
+        : "No source is selected, so Kuse must ask for facts when needed instead of guessing.",
+    },
+    {
+      title: "Turn a vague request into completion criteria",
+      body: `I specified the audience “${field(input.audience, "to be confirmed")},” scope “${field(input.amount, "to be confirmed")}”${format ? `, format “${format}”` : ""}${requirements ? `, and required elements such as “${requirements}”` : ""}. These make the output checkable rather than merely impressive.`,
+    },
+  ];
+
+  if (input.taskKind === "website") {
+    notes.push({
+      title: input.siteScope === "mvp" ? "Start with a usable MVP" : "Build the complete version in stages",
+      body: input.siteScope === "mvp"
+        ? "I limited the site to one page, 4–6 essential sections, and one primary action. It proves value first and excludes authentication, databases, and unrequested complex features."
+        : "I required the usable core pages first, followed by secondary pages and functions, so the task does not expand into an oversized system.",
+    });
+    notes.push({
+      title: "Name the genuinely shareable deliverable",
+      body: "I explicitly requested a Kuse Web Page / AI Pages result—not standalone HTML or slides—and Kuse's built-in publishing flow. The user clicks “Publish now” once when it appears, then gets the public URL without deploying elsewhere.",
+    });
+  }
+
+  notes.push({
+    title: "Keep professional judgment in the loop",
+    body: "I required unsupported accuracy, dates, policy, and citations to be marked for manual verification and excluded real student or staff sensitive data. A structured prompt is a collaboration specification, not a transfer of professional responsibility.",
+  });
+  return notes;
+}
+
 export function buildKusePrompt(input: KusePromptInput): string {
   const locale = input.outputLanguage;
   const sources = selectedLabels(input.sources, SOURCE_LABELS, locale);
@@ -125,6 +222,7 @@ export function buildKusePrompt(input: KusePromptInput): string {
   const format = input.format ? FORMAT_LABELS[input.format][locale] : "";
   const tone = input.tone ? TONE_LABELS[input.tone][locale] : "";
   const isWebsite = input.taskKind === "website";
+  const isMvpWebsite = isWebsite && input.siteScope === "mvp";
   const zhTaskRule: Record<KuseTaskKind, string> = {
     teaching_material: "教材內容需對齊指定材料、使用對象與學習目標，並提供可直接使用的清楚結構。",
     lesson_plan: "教案需對齊學習目標，清楚列出教學流程、所需材料與可檢查的學習成果。",
@@ -187,9 +285,12 @@ export function buildKusePrompt(input: KusePromptInput): string {
       input.extraConstraints.trim() ? `其他限制：${input.extraConstraints.trim()}` : "",
       "輸出語言：繁體中文。",
       isWebsite ? "【網站需求】" : "",
+      isWebsite ? `交付模式：${isMvpWebsite ? "快速 MVP（一頁式、先小後大）" : "完整版本（較完整的資訊架構與內容）"}` : "",
       isWebsite ? `要解決的問題：${field(input.problemToSolve, "未指定；請先詢問")}` : "",
       isWebsite ? `使用者最重要的行動：${field(input.primaryAction, "未指定；請先詢問")}` : "",
       isWebsite ? `視覺風格：${field(input.visualStyle, "清楚、易讀，視覺服務於資訊與行動")}` : "",
+      isWebsite ? `必須出現的內容：${field(input.mustIncludeContent, "依已提供材料整理；不要自行補造事實")}` : "",
+      isWebsite ? `按鈕與連結：${field(input.linksAndActions, "沒有真實網址時使用清楚標示的待補連結，不要做無功能按鈕")}` : "",
       "",
       "【工作規則】",
       "1. 先檢查角色、任務、材料與規格是否足夠；不清楚的地方先提問，不要自行假設。",
@@ -198,8 +299,11 @@ export function buildKusePrompt(input: KusePromptInput): string {
       "4. 先產出可直接使用的完整初稿，再列出需要人工確認的項目。",
       "5. 不使用真實學生姓名、成績、輔導、健康、人事或其他敏感資料。",
       "6. 正確性、適齡性、法規、日期與引用內容若無法從材料確認，明確標示「待人工查證」。",
-      isWebsite ? "7. 先提出網站架構與區塊規劃，再完成網站；首頁要能快速說明用途與主要行動。" : "",
-      isWebsite ? "8. 優先確保手機閱讀、資訊層級、按鈕文字與實際用途；避免冗長文字、無功能按鈕與不必要動畫。" : "",
+      isWebsite ? "7. 請使用 Kuse 的 Web Page／AI Pages 能力建立網站成品，不要只回傳下載用或無法分享的獨立 HTML 檔案，也不要改做成簡報。" : "",
+      isWebsite ? "8. 先用極短架構確認區塊後直接製作；最多一次集中詢問必要缺漏，能用清楚的待補欄位處理時就繼續，不要反覆來回規劃。" : "",
+      isWebsite ? (isMvpWebsite ? "9. MVP 限制為一頁式、4–6 個必要區塊、單一主要行動。先完成可用的小版本，不增加登入、資料庫、後台或未要求的複雜功能。" : "9. 完整版本仍要先交付可用的核心頁面，再逐步補上次要頁面與功能；避免一次擴張成難以完成的系統。") : "",
+      isWebsite ? "10. 優先確保手機閱讀、資訊層級、按鈕文字與實際用途；避免冗長文字、無功能按鈕與不必要動畫。" : "",
+      isWebsite ? "11. 網站完成後使用 Kuse 內建發布流程。若畫面出現「Publish now」且必須由我操作，請只明確提醒我點擊一次；發布完成後回傳可分享的公開 URL。不要要求我下載 HTML 或到其他平台部署。" : "",
     ].join("\n").replace(/\n{3,}/g, "\n\n").trim();
   }
 
@@ -229,9 +333,12 @@ export function buildKusePrompt(input: KusePromptInput): string {
     input.extraConstraints.trim() ? `Other constraints: ${input.extraConstraints.trim()}` : "",
     "Output language: English.",
     isWebsite ? "[WEBSITE REQUIREMENTS]" : "",
+    isWebsite ? `Delivery mode: ${isMvpWebsite ? "Quick MVP (one page, start small)" : "Complete version (broader information architecture and content)"}` : "",
     isWebsite ? `Problem to solve: ${field(input.problemToSolve, "Not specified — ask me first")}` : "",
     isWebsite ? `Primary user action: ${field(input.primaryAction, "Not specified — ask me first")}` : "",
     isWebsite ? `Visual direction: ${field(input.visualStyle, "Clear and readable; visuals must support information and action")}` : "",
+    isWebsite ? `Required content: ${field(input.mustIncludeContent, "Organize only the supplied material; do not invent facts")}` : "",
+    isWebsite ? `Buttons and links: ${field(input.linksAndActions, "Use clearly marked placeholders when a real URL is unavailable; never create non-functional buttons")}` : "",
     "",
     "[WORKING RULES]",
     "1. Check whether the role, task, materials, and specifications are sufficient. Ask focused questions when anything is unclear; do not assume.",
@@ -240,7 +347,10 @@ export function buildKusePrompt(input: KusePromptInput): string {
     "4. Produce a complete, usable first draft, followed by a short list of items that need human review.",
     "5. Do not use real student names, grades, counseling, health, HR, or other sensitive data.",
     "6. Mark accuracy, age suitability, policy, dates, and citations as 'verify manually' whenever the supplied material cannot confirm them.",
-    isWebsite ? "7. Propose the site structure and sections before building. The first screen must quickly explain the site's purpose and primary action." : "",
-    isWebsite ? "8. Prioritize mobile reading, information hierarchy, explicit button labels, and working actions. Avoid long copy, non-functional buttons, and unnecessary animation." : "",
+    isWebsite ? "7. Use Kuse's Web Page / AI Pages capability to create the website deliverable. Do not return only a downloadable or unshareable standalone HTML file, and do not turn the task into a slide deck." : "",
+    isWebsite ? "8. Confirm the section plan briefly, then build. Ask at most one consolidated set of essential questions; continue with clearly labeled placeholders when possible instead of prolonging planning." : "",
+    isWebsite ? (isMvpWebsite ? "9. Keep the MVP to one page, 4–6 essential sections, and one primary action. Finish a small usable version first; do not add authentication, databases, admin panels, or unrequested complex features." : "9. For the complete version, deliver the usable core pages first and add secondary pages or features in stages. Do not expand it into an unnecessarily large system.") : "",
+    isWebsite ? "10. Prioritize mobile reading, information hierarchy, explicit button labels, and working actions. Avoid long copy, non-functional buttons, and unnecessary animation." : "",
+    isWebsite ? "11. When the site is ready, use Kuse's built-in publishing flow. If a 'Publish now' button appears and requires my action, tell me clearly to click it once. After publishing, return the public share URL. Do not ask me to download HTML or deploy it on another platform." : "",
   ].join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }

@@ -102,12 +102,39 @@
     },
     "website": {
       "title": "網站需求",
+      "mvpBadge": "現場示範首選",
+      "mvp": "快速 MVP",
+      "mvpHint": "一頁、4–6 個必要區塊、單一主要行動，完成後直接分享。",
+      "completeBadge": "分階段完成",
+      "complete": "完整版本",
+      "completeHint": "先交付可用核心，再逐步增加次要頁面或功能。",
+      "size": "網站規模",
+      "sizePlaceholder": "例如：一頁式，4–6 個必要區塊",
       "problem": "要解決的問題",
       "problemPlaceholder": "例如：校外教學資訊散落在不同訊息中",
       "action": "使用者最重要的行動",
       "actionPlaceholder": "例如：查看行程並填寫回覆表單",
       "style": "視覺方向",
-      "stylePlaceholder": "例如：清楚、沉穩、手機優先、校園藍色"
+      "stylePlaceholder": "例如：清楚、沉穩、手機優先、校園藍色",
+      "content": "必須出現的內容",
+      "contentPlaceholder": "例如：行程、攜帶物品、集合地點、緊急聯絡方式",
+      "links": "真實連結與按鈕動作",
+      "linksPlaceholder": "例如：回覆表單網址、地圖網址；尚未確認時標示待補"
+    },
+    "model": {
+      "eyebrow": "模型指引",
+      "title": "進入 Kuse 後請選這個模型",
+      "qualityFirst": "品質優先權重",
+      "recommended": "本次任務首選",
+      "signals": "影響分數的條件"
+    },
+    "learning": {
+      "title": "這份 Prompt 為什麼這樣設計？",
+      "hint": "展開查看每一項設計背後的思考。",
+      "intro": "以下是你這份 Prompt 的設計邏輯；同一套思考可以用在 Kuse，也可以用在其他 AI 工具。",
+      "transferTitle": "下次先問自己五個問題",
+      "transferBody": "每題用一、兩句話回答，就能自己寫出可用的 Prompt，不需要永遠複製這個版本。",
+      "framework": ["AI 是誰？", "只做哪一件事？", "依據什麼？", "給誰、用什麼形式？", "我要怎麼驗收？"]
     },
     "result": {
       "eyebrow": "角色 · 任務 · 材料 · 規格",

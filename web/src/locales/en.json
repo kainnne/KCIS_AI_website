@@ -102,12 +102,39 @@
     },
     "website": {
       "title": "Website details",
+      "mvpBadge": "Recommended for a live demo",
+      "mvp": "Quick MVP",
+      "mvpHint": "One page, 4–6 essential sections, one primary action, then share it.",
+      "completeBadge": "Build in stages",
+      "complete": "Complete version",
+      "completeHint": "Deliver the usable core first, then add secondary pages or functions.",
+      "size": "Website size",
+      "sizePlaceholder": "e.g. One page with 4–6 essential sections",
       "problem": "Problem to solve",
       "problemPlaceholder": "e.g. Important field trip information is scattered across messages",
       "action": "Primary user action",
       "actionPlaceholder": "e.g. Read the schedule and submit the response form",
       "style": "Visual direction",
-      "stylePlaceholder": "e.g. Calm, clear, mobile-first, school blue"
+      "stylePlaceholder": "e.g. Calm, clear, mobile-first, school blue",
+      "content": "Content that must appear",
+      "contentPlaceholder": "e.g. Schedule, packing list, meeting point, emergency contact",
+      "links": "Real links and button actions",
+      "linksPlaceholder": "e.g. Response form URL; map URL; use a marked placeholder if not ready"
+    },
+    "model": {
+      "eyebrow": "Model guidance",
+      "title": "Choose this model in Kuse",
+      "qualityFirst": "Quality-first weighting",
+      "recommended": "Recommended for this task",
+      "signals": "Why the score changed"
+    },
+    "learning": {
+      "title": "Why is this prompt designed this way?",
+      "hint": "Open this to learn the thinking behind the structure.",
+      "intro": "This is the design logic behind your prompt. The same logic works in Kuse or any other AI tool.",
+      "transferTitle": "Try the five-question framework next time",
+      "transferBody": "Before asking an AI, answer these five questions in one or two lines each. You do not need to copy this exact prompt forever.",
+      "framework": ["Who should AI be?", "What one task?", "Based on what?", "For whom and in what form?", "How will I check it?"]
     },
     "result": {
       "eyebrow": "Role · Task · Materials · Specifications",
