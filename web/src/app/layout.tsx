@@ -21,21 +21,21 @@ const body = Noto_Sans_TC({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ai-tools.kcis.kainnne.com"),
-  title: "Kang Chiao AI Navigator",
-  description: "Find the right AI tools for teaching, learning, and school administration.",
+  title: "Kang Chiao AI Tools",
+  description: "Find the right AI tool or build a structured, Kuse-ready prompt.",
   openGraph: {
-    title: "Kang Chiao AI Navigator",
-    description: "Find the right AI tools for teaching, learning, and school administration.",
+    title: "Kang Chiao AI Tools",
+    description: "Choose the AI Tool Navigator or build a structured, Kuse-ready prompt.",
     url: "/",
-    siteName: "Kang Chiao AI Navigator",
-    images: [{ url: "/og.png", width: 1731, height: 909, alt: "Kang Chiao AI Navigator" }],
+    siteName: "Kang Chiao AI Tools",
+    images: [{ url: "/og-tools.png", width: 1662, height: 946, alt: "Kang Chiao AI Tools" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kang Chiao AI Navigator",
-    description: "Find the right AI tools for teaching, learning, and school administration.",
-    images: ["/og.png"],
+    title: "Kang Chiao AI Tools",
+    description: "Choose the AI Tool Navigator or build a structured, Kuse-ready prompt.",
+    images: ["/og-tools.png"],
   },
 };
 

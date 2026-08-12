@@ -1,13 +1,14 @@
 {
   "meta": {
-    "brand": "Kang Chiao AI Navigator",
-    "brandEn": "Kang Chiao AI Navigator",
+    "brand": "Kang Chiao AI Tools",
+    "brandEn": "Kang Chiao AI Tools",
     "prototype": "",
     "tagline": "Find the right AI tools for teaching, learning, and school admin work",
     "privacy": "Please don't enter real names, grades, salaries, or other personal data."
   },
   "nav": {
     "home": "Home",
+    "allTools": "All tools",
     "start": "Start",
     "back": "Back",
     "next": "Next",
@@ -38,11 +39,91 @@
     "easyLearn": "Very easy",
     "otherHint": "Say what you want in one sentence (goes into the prompt; ranking still uses role/office)"
   },
+  "hub": {
+    "eyebrow": "Kang Chiao AI Tools",
+    "title": "What would you like to do?",
+    "subtitle": "Choose a tool to begin.",
+    "navigator": {
+      "title": "AI Tool Navigator",
+      "description": "Find the right AI tool for your task.",
+      "audience": "Teachers · Students · Admin",
+      "action": "Find a tool"
+    },
+    "kuse": {
+      "title": "Kuse Prompt Builder",
+      "description": "Turn one real task into a structured, Kuse-ready prompt.",
+      "audience": "Teachers · Admin",
+      "action": "Build a prompt"
+    }
+  },
   "welcome": {
     "title": "Not sure which AI to use?",
     "subtitle": "Tell us what you need — quickly find the right tools to teach, prepare, or learn",
     "cta": "Let's go",
     "note": ""
+  },
+  "kuseBuilder": {
+    "role": {
+      "title": "Who is this prompt for?",
+      "subtitle": "Choose the role that matches this task.",
+      "teacher": "I'm a teacher",
+      "teacherHint": "Teaching materials, lessons, slides, and websites",
+      "admin": "I'm admin staff",
+      "adminHint": "Notices, meetings, workflows, slides, and websites"
+    },
+    "task": {
+      "title": "What do you want Kuse to create?",
+      "subtitle": "Keep it to one task. Pick a starting point, then describe it in your own words.",
+      "label": "Describe the task",
+      "teacherPlaceholder": "e.g. Create a Grade 8 science worksheet about buoyancy with 15 questions and explanations",
+      "adminPlaceholder": "e.g. Turn the field trip notes into a concise parent information website"
+    },
+    "materials": {
+      "title": "What should Kuse work from?",
+      "subtitle": "Select the material you have. Leave it blank when you want Kuse to ask first.",
+      "label": "Material details (optional)",
+      "placeholder": "e.g. Book 3, Chapter 2; use the attached PDF and keep all dates exactly as written"
+    },
+    "specs": {
+      "title": "Set the output specifications",
+      "subtitle": "Add only the details that matter for this task.",
+      "audience": "Audience",
+      "teacherAudience": "e.g. Grade 8 students",
+      "adminAudience": "e.g. parents, all staff, new teachers",
+      "amount": "Amount or length",
+      "amountPlaceholder": "e.g. 12 slides, 15 questions, under 300 words",
+      "format": "Format",
+      "tone": "Tone",
+      "mustInclude": "Must include",
+      "extra": "Other constraints (optional)",
+      "extraPlaceholder": "e.g. Use only supplied facts; include placeholders for missing information",
+      "outputLanguage": "Prompt and output language",
+      "build": "Build prompt"
+    },
+    "website": {
+      "title": "Website details",
+      "problem": "Problem to solve",
+      "problemPlaceholder": "e.g. Important field trip information is scattered across messages",
+      "action": "Primary user action",
+      "actionPlaceholder": "e.g. Read the schedule and submit the response form",
+      "style": "Visual direction",
+      "stylePlaceholder": "e.g. Calm, clear, mobile-first, school blue"
+    },
+    "result": {
+      "eyebrow": "Role · Task · Materials · Specifications",
+      "title": "Your Kuse prompt is ready",
+      "promptLabel": "Edit anything you need, then copy it into Kuse.",
+      "copy": "Copy prompt",
+      "openKuse": "Open Kuse",
+      "restart": "Start over"
+    },
+    "summary": {
+      "role": "Role",
+      "task": "Task",
+      "materials": "Materials",
+      "output": "Output",
+      "none": "Kuse will ask if material is needed"
+    }
   },
   "steps": {
     "role": "Who are you?",

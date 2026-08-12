@@ -14,8 +14,10 @@ import { rankTools } from "@/lib/scoring";
 import { getTools } from "@/lib/tools";
 import type { Department, Role, UserNeed, WizardStep } from "@/lib/types";
 import { DecorBackground } from "./DecorBackground";
+import { FeatureHub } from "./FeatureHub";
 import { InteractiveField } from "./InteractiveField";
 import { InteractiveHero } from "./InteractiveHero";
+import { KusePromptBuilder } from "./KusePromptBuilder";
 import { OptionCard, StepPanel } from "./OptionCard";
 import { ProgressBar } from "./ProgressBar";
 import { ResultsPanel } from "./ResultsPanel";
@@ -42,6 +44,7 @@ function progressSteps(role: Role | null): WizardStep[] {
 export function NavigatorApp() {
   const { t, locale } = useI18n();
   const reduce = useReducedMotion();
+  const [mode, setMode] = useState<"hub" | "navigator" | "kuse">("hub");
   const [step, setStep] = useState<WizardStep>("welcome");
   const [need, setNeed] = useState<UserNeed>(() => initialNeed(locale));
   const tools = useMemo(() => getTools(), []);
@@ -81,6 +84,19 @@ export function NavigatorApp() {
     go("welcome");
   }
 
+  function openHome() {
+    setMode("hub");
+    setNeed(initialNeed(locale));
+    setStep("welcome");
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  }
+
+  function openNavigator() {
+    setNeed(initialNeed(locale));
+    setStep("welcome");
+    setMode("navigator");
+  }
+
   function toggleKeyword(k: string) {
     setNeed((prev) => {
       const exists = prev.keywords.includes(k);
@@ -103,14 +119,49 @@ export function NavigatorApp() {
     <div className="kc-shell">
       <DecorBackground />
       <InteractiveField />
-      <SiteHeader onRestart={step === "welcome" ? undefined : restart} />
+      <SiteHeader onHome={mode === "hub" ? undefined : openHome} />
 
-      {step !== "welcome" && step !== "results" ? (
+      {mode === "navigator" && step !== "welcome" && step !== "results" ? (
         <ProgressBar stepIndex={progressIndex} total={progressTotal} />
       ) : null}
 
       <AnimatePresence mode="wait">
-        {step === "welcome" ? (
+        {mode === "hub" ? (
+          <FeatureHub
+            key="hub"
+            eyebrow={t.hub.eyebrow}
+            title={t.hub.title}
+            subtitle={t.hub.subtitle}
+            features={[
+              {
+                id: "navigator",
+                index: "01",
+                monogram: "N",
+                title: t.hub.navigator.title,
+                description: t.hub.navigator.description,
+                audience: t.hub.navigator.audience,
+                action: t.hub.navigator.action,
+                variant: "light",
+                onClick: openNavigator,
+              },
+              {
+                id: "kuse",
+                index: "02",
+                monogram: "K",
+                title: t.hub.kuse.title,
+                description: t.hub.kuse.description,
+                audience: t.hub.kuse.audience,
+                action: t.hub.kuse.action,
+                variant: "dark",
+                onClick: () => setMode("kuse"),
+              },
+            ]}
+          />
+        ) : null}
+
+        {mode === "kuse" ? <KusePromptBuilder key="kuse" onHome={openHome} /> : null}
+
+        {mode === "navigator" && step === "welcome" ? (
           <motion.section
             key="welcome"
             initial={reduce ? false : { opacity: 0, y: 18 }}
@@ -135,7 +186,7 @@ export function NavigatorApp() {
           </motion.section>
         ) : null}
 
-        {step === "role" ? (
+        {mode === "navigator" && step === "role" ? (
           <StepPanel key="role" title={t.steps.role}>
             <div className="grid gap-3 sm:grid-cols-2">
               {(["teacher", "student", "admin"] as Role[]).map((role) => (
@@ -167,7 +218,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {step === "department" ? (
+        {mode === "navigator" && step === "department" ? (
           <StepPanel
             key="department"
             title={t.steps.department}
@@ -203,7 +254,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {step === "level" ? (
+        {mode === "navigator" && step === "level" ? (
           <StepPanel
             key="level"
             title={t.steps.level}
@@ -236,7 +287,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {step === "task" ? (
+        {mode === "navigator" && step === "task" ? (
           <StepPanel
             key="task"
             title={t.steps.task}
@@ -267,7 +318,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {step === "keywords" && canShowKeywords ? (
+        {mode === "navigator" && step === "keywords" && canShowKeywords ? (
           <KeywordsStep
             key="keywords"
             need={needWithLocale}
@@ -280,7 +331,7 @@ export function NavigatorApp() {
           />
         ) : null}
 
-        {step === "details" ? (
+        {mode === "navigator" && step === "details" ? (
           <StepPanel
             key="details"
             title={t.steps.details}
@@ -332,7 +383,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {step === "results" ? (
+        {mode === "navigator" && step === "results" ? (
           <ResultsPanel
             key="results"
             need={needWithLocale}

@@ -3,7 +3,7 @@
 import { useI18n } from "@/lib/i18n";
 
 export function ProgressBar({ stepIndex, total }: { stepIndex: number; total: number }) {
-  const { t, locale } = useI18n();
+  const { locale } = useI18n();
   const pct = Math.round(((stepIndex + 1) / total) * 100);
 
   return (
@@ -17,7 +17,6 @@ export function ProgressBar({ stepIndex, total }: { stepIndex: number; total: nu
       <div className="kc-progress-track" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div className="kc-progress-bar transition-all duration-300 ease-out" style={{ width: `${pct}%` }} />
       </div>
-      <p className="sr-only">{t.meta.tagline}</p>
     </div>
   );
 }

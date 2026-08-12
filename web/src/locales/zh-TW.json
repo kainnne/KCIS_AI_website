@@ -1,13 +1,14 @@
 {
   "meta": {
-    "brand": "康橋 AI 應用導航",
-    "brandEn": "Kang Chiao AI Navigator",
+    "brand": "康橋 AI 工具站",
+    "brandEn": "Kang Chiao AI Tools",
     "prototype": "",
     "tagline": "為教學、學習與行政工作，找到合適的 AI 工具",
     "privacy": "提醒：不要填寫真實姓名、成績、薪資或其他個資。"
   },
   "nav": {
     "home": "首頁",
+    "allTools": "所有功能",
     "start": "開始",
     "back": "回上一步",
     "next": "下一步",
@@ -38,11 +39,91 @@
     "easyLearn": "很好學",
     "otherHint": "用一句話說你想做什麼（會寫進提示詞；推薦仍依身分與單位）"
   },
+  "hub": {
+    "eyebrow": "康橋 AI 工具站",
+    "title": "今天想使用哪個功能？",
+    "subtitle": "選一個功能開始。",
+    "navigator": {
+      "title": "AI 工具導航",
+      "description": "依照你的任務，找到合適的 AI 工具。",
+      "audience": "老師 · 學生 · 行政",
+      "action": "尋找工具"
+    },
+    "kuse": {
+      "title": "Kuse Prompt Builder",
+      "description": "把一項真實任務整理成可直接交給 Kuse 的結構化 Prompt。",
+      "audience": "老師 · 行政",
+      "action": "建立 Prompt"
+    }
+  },
   "welcome": {
     "title": "不知道該用哪個 AI？",
     "subtitle": "告訴我你的需求，快速找到適合的工具，開始教學、備課或學習",
     "cta": "開始吧",
     "note": ""
+  },
+  "kuseBuilder": {
+    "role": {
+      "title": "這份 Prompt 是誰要使用？",
+      "subtitle": "選擇最符合這項任務的身分。",
+      "teacher": "我是老師",
+      "teacherHint": "教材、教案、簡報與教學網站",
+      "admin": "我是行政人員",
+      "adminHint": "通知、會議、流程、簡報與行政網站"
+    },
+    "task": {
+      "title": "你想請 Kuse 產出什麼？",
+      "subtitle": "一次只做一件事。先選一個方向，再用自己的話說清楚。",
+      "label": "描述這項任務",
+      "teacherPlaceholder": "例如：製作八年級自然科浮力單元學習單，15 題並附答案與解析",
+      "adminPlaceholder": "例如：把校外教學資料整理成家長能快速閱讀的行前資訊網站"
+    },
+    "materials": {
+      "title": "Kuse 應該依據哪些材料？",
+      "subtitle": "選擇你手邊已有的材料；沒有也可以留白，讓 Kuse 先詢問。",
+      "label": "材料說明（選填）",
+      "placeholder": "例如：第三冊第二章；依附件 PDF 製作，日期必須完全沿用原文"
+    },
+    "specs": {
+      "title": "設定輸出規格",
+      "subtitle": "只加入這項任務真正需要的細節。",
+      "audience": "使用對象",
+      "teacherAudience": "例如：八年級學生",
+      "adminAudience": "例如：家長、全體教職員、新進老師",
+      "amount": "數量或長度",
+      "amountPlaceholder": "例如：12 頁簡報、15 題、300 字以內",
+      "format": "格式",
+      "tone": "語氣",
+      "mustInclude": "必須包含",
+      "extra": "其他限制（選填）",
+      "extraPlaceholder": "例如：只能使用提供的事實；缺少資訊時保留待填欄位",
+      "outputLanguage": "Prompt 與產出語言",
+      "build": "建立 Prompt"
+    },
+    "website": {
+      "title": "網站需求",
+      "problem": "要解決的問題",
+      "problemPlaceholder": "例如：校外教學資訊散落在不同訊息中",
+      "action": "使用者最重要的行動",
+      "actionPlaceholder": "例如：查看行程並填寫回覆表單",
+      "style": "視覺方向",
+      "stylePlaceholder": "例如：清楚、沉穩、手機優先、校園藍色"
+    },
+    "result": {
+      "eyebrow": "角色 · 任務 · 材料 · 規格",
+      "title": "你的 Kuse Prompt 已完成",
+      "promptLabel": "需要的話可以直接修改，完成後複製到 Kuse。",
+      "copy": "複製 Prompt",
+      "openKuse": "前往 Kuse",
+      "restart": "重新建立"
+    },
+    "summary": {
+      "role": "角色",
+      "task": "任務",
+      "materials": "材料",
+      "output": "產出語言",
+      "none": "需要材料時由 Kuse 先詢問"
+    }
   },
   "steps": {
     "role": "你是哪一位呢？",

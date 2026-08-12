@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 const asset = (path: string) =>
   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path.startsWith("/") ? path : `/${path}`}`;
 
-export function SiteHeader({ onRestart }: { onRestart?: () => void }) {
+export function SiteHeader({ onHome }: { onHome?: () => void }) {
   const { t, locale, setLocale } = useI18n();
 
   return (
@@ -24,9 +24,9 @@ export function SiteHeader({ onRestart }: { onRestart?: () => void }) {
       </Link>
 
       <div className="flex items-center gap-2">
-        {onRestart ? (
-          <button type="button" className="kc-btn-ghost hidden sm:inline-flex" onClick={onRestart}>
-            {t.nav.restart}
+        {onHome ? (
+          <button type="button" className="kc-btn-ghost kc-header-home" onClick={onHome}>
+            {t.nav.allTools}
           </button>
         ) : null}
         <a
