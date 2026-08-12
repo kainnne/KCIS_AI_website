@@ -73,32 +73,44 @@
     },
     "task": {
       "title": "你想請 Kuse 產出什麼？",
-      "subtitle": "一次只做一件事。先選一個方向，再用自己的話說清楚。",
-      "label": "描述這項任務",
+      "subtitle": "先選類型，再用一句話描述即可。",
+      "label": "一句話任務（必填）",
       "teacherPlaceholder": "例如：製作八年級自然科浮力單元學習單，15 題並附答案與解析",
       "adminPlaceholder": "例如：把校外教學資料整理成家長能快速閱讀的行前資訊網站"
     },
     "materials": {
       "title": "Kuse 應該依據哪些材料？",
-      "subtitle": "選擇你手邊已有的材料；沒有也可以留白，讓 Kuse 先詢問。",
-      "label": "材料說明（選填）",
-      "placeholder": "例如：第三冊第二章；依附件 PDF 製作，日期必須完全沿用原文"
+      "subtitle": "選擇現有材料、選擇沒有資料，或直接略過。",
+      "label": "材料補充（選填）",
+      "placeholder": "例如：第三冊第二章；依附件 PDF 製作，日期必須完全沿用原文",
+      "noMaterialHint": "沒關係，Kuse 會先做通用初稿；校內日期、數字與規定會保留待補。"
     },
     "specs": {
-      "title": "設定輸出規格",
-      "subtitle": "只加入這項任務真正需要的細節。",
-      "audience": "使用對象",
+      "title": "有需要再補充",
+      "subtitle": "這一頁全部選填；缺少必要資訊時，Kuse 可以集中問一次。",
+      "audience": "使用對象（選填）",
       "teacherAudience": "例如：八年級學生",
       "adminAudience": "例如：家長、全體教職員、新進老師",
-      "amount": "數量或長度",
+      "amount": "數量或長度（選填）",
       "amountPlaceholder": "例如：12 頁簡報、15 題、300 字以內",
-      "format": "格式",
-      "tone": "語氣",
-      "mustInclude": "必須包含",
+      "format": "格式（選填）",
+      "tone": "語氣（選填）",
+      "mustInclude": "必須包含（選填）",
       "extra": "其他限制（選填）",
       "extraPlaceholder": "例如：只能使用提供的事實；缺少資訊時保留待填欄位",
       "outputLanguage": "Prompt 與產出語言",
       "build": "建立 Prompt"
+    },
+    "quick": {
+      "title": "精簡化任務",
+      "on": "讓 Kuse 少追問、少規劃，先完成可用初稿。",
+      "off": "Kuse 可以花較多時間詢問與規劃。",
+      "enabled": "已開啟",
+      "disabled": "已關閉"
+    },
+    "advanced": {
+      "title": "更多選填設定",
+      "hint": "風格、格式、語氣、必要內容與其他限制"
     },
     "website": {
       "title": "網站需求",
@@ -108,17 +120,17 @@
       "completeBadge": "分階段完成",
       "complete": "完整版本",
       "completeHint": "先交付可用核心，再逐步增加次要頁面或功能。",
-      "size": "網站規模",
+      "size": "網站規模（選填）",
       "sizePlaceholder": "例如：一頁式，4–6 個必要區塊",
-      "problem": "要解決的問題",
+      "problem": "要解決的問題（選填）",
       "problemPlaceholder": "例如：校外教學資訊散落在不同訊息中",
-      "action": "使用者最重要的行動",
+      "action": "使用者最重要的行動（選填）",
       "actionPlaceholder": "例如：查看行程並填寫回覆表單",
-      "style": "視覺方向",
+      "style": "視覺方向（選填）",
       "stylePlaceholder": "例如：清楚、沉穩、手機優先、校園藍色",
-      "content": "必須出現的內容",
+      "content": "必須出現的內容（選填）",
       "contentPlaceholder": "例如：行程、攜帶物品、集合地點、緊急聯絡方式",
-      "links": "真實連結與按鈕動作",
+      "links": "真實連結與按鈕動作（選填）",
       "linksPlaceholder": "例如：回覆表單網址、地圖網址；尚未確認時標示待補"
     },
     "model": {
@@ -130,10 +142,10 @@
     },
     "learning": {
       "title": "這份 Prompt 為什麼這樣設計？",
-      "hint": "展開查看每一項設計背後的思考。",
-      "intro": "以下是你這份 Prompt 的設計邏輯；同一套思考可以用在 Kuse，也可以用在其他 AI 工具。",
-      "transferTitle": "下次先問自己五個問題",
-      "transferBody": "每題用一、兩句話回答，就能自己寫出可用的 Prompt，不需要永遠複製這個版本。",
+      "hint": "用 10 秒看懂自己做了哪些選擇。",
+      "intro": "你剛才做了這些 Prompt 設計：",
+      "transferTitle": "下次自己寫",
+      "transferBody": "先回答五個小問題：",
       "framework": ["AI 是誰？", "只做哪一件事？", "依據什麼？", "給誰、用什麼形式？", "我要怎麼驗收？"]
     },
     "result": {

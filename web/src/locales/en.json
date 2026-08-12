@@ -73,32 +73,44 @@
     },
     "task": {
       "title": "What do you want Kuse to create?",
-      "subtitle": "Keep it to one task. Pick a starting point, then describe it in your own words.",
-      "label": "Describe the task",
+      "subtitle": "Pick a type, then write only one sentence.",
+      "label": "One-line task (required)",
       "teacherPlaceholder": "e.g. Create a Grade 8 science worksheet about buoyancy with 15 questions and explanations",
       "adminPlaceholder": "e.g. Turn the field trip notes into a concise parent information website"
     },
     "materials": {
       "title": "What should Kuse work from?",
-      "subtitle": "Select the material you have. Leave it blank when you want Kuse to ask first.",
-      "label": "Material details (optional)",
-      "placeholder": "e.g. Book 3, Chapter 2; use the attached PDF and keep all dates exactly as written"
+      "subtitle": "Choose what you have, choose no material, or simply skip this step.",
+      "label": "Material note (optional)",
+      "placeholder": "e.g. Book 3, Chapter 2; use the attached PDF and keep all dates exactly as written",
+      "noMaterialHint": "No problem. Kuse can start a general draft and leave school-specific facts as placeholders."
     },
     "specs": {
-      "title": "Set the output specifications",
-      "subtitle": "Add only the details that matter for this task.",
-      "audience": "Audience",
+      "title": "Add anything useful",
+      "subtitle": "Everything on this page is optional. If needed, Kuse can ask once.",
+      "audience": "Audience (optional)",
       "teacherAudience": "e.g. Grade 8 students",
       "adminAudience": "e.g. parents, all staff, new teachers",
-      "amount": "Amount or length",
+      "amount": "Amount or length (optional)",
       "amountPlaceholder": "e.g. 12 slides, 15 questions, under 300 words",
-      "format": "Format",
-      "tone": "Tone",
-      "mustInclude": "Must include",
+      "format": "Format (optional)",
+      "tone": "Tone (optional)",
+      "mustInclude": "Must include (optional)",
       "extra": "Other constraints (optional)",
       "extraPlaceholder": "e.g. Use only supplied facts; include placeholders for missing information",
       "outputLanguage": "Prompt and output language",
       "build": "Build prompt"
+    },
+    "quick": {
+      "title": "Simplify this task",
+      "on": "Kuse will ask less, skip long planning, and make a usable draft first.",
+      "off": "Kuse may spend more time asking and planning.",
+      "enabled": "On",
+      "disabled": "Off"
+    },
+    "advanced": {
+      "title": "More optional settings",
+      "hint": "Style, format, tone, required items, and other limits"
     },
     "website": {
       "title": "Website details",
@@ -108,17 +120,17 @@
       "completeBadge": "Build in stages",
       "complete": "Complete version",
       "completeHint": "Deliver the usable core first, then add secondary pages or functions.",
-      "size": "Website size",
+      "size": "Website size (optional)",
       "sizePlaceholder": "e.g. One page with 4–6 essential sections",
-      "problem": "Problem to solve",
+      "problem": "Problem to solve (optional)",
       "problemPlaceholder": "e.g. Important field trip information is scattered across messages",
-      "action": "Primary user action",
+      "action": "Primary user action (optional)",
       "actionPlaceholder": "e.g. Read the schedule and submit the response form",
-      "style": "Visual direction",
+      "style": "Visual direction (optional)",
       "stylePlaceholder": "e.g. Calm, clear, mobile-first, school blue",
-      "content": "Content that must appear",
+      "content": "Content that must appear (optional)",
       "contentPlaceholder": "e.g. Schedule, packing list, meeting point, emergency contact",
-      "links": "Real links and button actions",
+      "links": "Real links and button actions (optional)",
       "linksPlaceholder": "e.g. Response form URL; map URL; use a marked placeholder if not ready"
     },
     "model": {
@@ -130,10 +142,10 @@
     },
     "learning": {
       "title": "Why is this prompt designed this way?",
-      "hint": "Open this to learn the thinking behind the structure.",
-      "intro": "This is the design logic behind your prompt. The same logic works in Kuse or any other AI tool.",
-      "transferTitle": "Try the five-question framework next time",
-      "transferBody": "Before asking an AI, answer these five questions in one or two lines each. You do not need to copy this exact prompt forever.",
+      "hint": "A 10-second review of your choices.",
+      "intro": "You made these prompt choices:",
+      "transferTitle": "Write your own next time",
+      "transferBody": "Answer these five short questions:",
       "framework": ["Who should AI be?", "What one task?", "Based on what?", "For whom and in what form?", "How will I check it?"]
     },
     "result": {

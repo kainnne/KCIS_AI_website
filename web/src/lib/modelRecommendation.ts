@@ -164,6 +164,12 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     signals.push(locale === "zh-TW" ? "完整版本需要較高的規格整合能力" : "Complete mode needs stronger specification handling");
   }
 
+  if (input.executionMode === "quick") {
+    add(scores, ["gemini-flash"], 4);
+    add(scores, ["claude-sonnet"], 2);
+    signals.push(locale === "zh-TW" ? "已開啟精簡模式，增加快速模型權重" : "Quick mode increases the weight of faster models");
+  }
+
   // Kang Chiao accounts have ample credits, so task fit and quality outrank cost.
   add(scores, ["claude-opus", "gpt-5-5", "gemini-pro"], 1);
 
@@ -181,8 +187,8 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     alternative: { ...alternative, score: scores[alternative.id], explanation: explain(alternative) },
     signals: signals.slice(0, 3),
     method: locale === "zh-TW"
-      ? "演算會綜合任務類型、材料複雜度、交付範圍與速度需求。康橋帳號點數充足，因此首選以品質與任務適配為主，不以省點數為優先。"
-      : "The recommendation combines task type, source complexity, delivery scope, and speed. Because KCIS accounts have ample credits, the primary choice favors quality and task fit over point savings.",
+      ? "依任務、材料、範圍與速度推薦；點數充足時以適配度為主，開啟精簡模式時才提高快速模型權重。"
+      : "The score uses task, sources, scope, and speed. It favors task fit unless Quick mode raises the weight of faster models.",
     alternativeLabel: locale === "zh-TW" ? "若首選忙碌或想加快速度，可改用" : "Use this when the first choice is busy or you want a faster alternative",
     availabilityNote: locale === "zh-TW"
       ? "Kuse 的模型名稱可能更新；請選同系列最接近且帳號中可用的版本。未公開能力定位的模型不會被本工具猜測評分。"

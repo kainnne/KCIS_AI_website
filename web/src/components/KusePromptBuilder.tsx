@@ -52,8 +52,8 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
 };
 
 const ROLE_SOURCES: Record<KuseRole, KuseSource[]> = {
-  teacher: ["kuse_textbook", "uploaded_pdf", "lesson_text", "own_notes"],
-  admin: ["transcript", "official_document", "spreadsheet", "existing_template", "own_notes"],
+  teacher: ["kuse_textbook", "no_material", "uploaded_pdf", "lesson_text", "own_notes"],
+  admin: ["no_material", "transcript", "official_document", "spreadsheet", "existing_template", "own_notes"],
 };
 
 const ROLE_REQUIREMENTS: Record<KuseRole, KuseRequirement[]> = {
@@ -87,6 +87,77 @@ const DEFAULT_FORMAT_BY_TASK: Partial<Record<KuseTaskKind, KuseFormat>> = {
   report: "structured",
 };
 
+type TaskHints = {
+  task: string;
+  materials: string;
+  audience: string;
+  amount: string;
+  extra: string;
+};
+
+const TASK_HINTS: Record<KuseTaskKind, Record<Locale, TaskHints>> = {
+  teaching_material: {
+    en: { task: "e.g. Create a buoyancy handout for Grade 8", materials: "e.g. Book 3, Chapter 2 or the attached PDF", audience: "e.g. Grade 8 students", amount: "e.g. 2 pages", extra: "e.g. Include one worked example" },
+    "zh-TW": { task: "例如：製作八年級浮力單元教材", materials: "例如：第三冊第二章或附件 PDF", audience: "例如：八年級學生", amount: "例如：2 頁", extra: "例如：加入一個示範例題" },
+  },
+  lesson_plan: {
+    en: { task: "e.g. Plan a 45-minute inquiry lesson on buoyancy", materials: "e.g. Use the attached lesson text", audience: "e.g. Grade 8 mixed-ability class", amount: "e.g. 45 minutes", extra: "e.g. End with a 3-minute check" },
+    "zh-TW": { task: "例如：設計 45 分鐘的浮力探究課", materials: "例如：依附件課文設計", audience: "例如：八年級混合程度班級", amount: "例如：45 分鐘", extra: "例如：最後安排 3 分鐘檢核" },
+  },
+  worksheet: {
+    en: { task: "e.g. Make a practice worksheet about density", materials: "e.g. Use textbook pages 42–47", audience: "e.g. Grade 7 students", amount: "e.g. 10 questions", extra: "e.g. Printable on two A4 pages" },
+    "zh-TW": { task: "例如：製作密度單元練習單", materials: "例如：依課本第 42–47 頁", audience: "例如：七年級學生", amount: "例如：10 題", extra: "例如：可用兩張 A4 列印" },
+  },
+  assessment: {
+    en: { task: "e.g. Create a quiz for the buoyancy unit", materials: "e.g. Use Chapters 2–3 only", audience: "e.g. Grade 8 students", amount: "e.g. 15 questions", extra: "e.g. Separate answers from questions" },
+    "zh-TW": { task: "例如：設計浮力單元小考", materials: "例如：只使用第二、三章內容", audience: "例如：八年級學生", amount: "例如：15 題", extra: "例如：答案與題目分開" },
+  },
+  class_activity: {
+    en: { task: "e.g. Design a group activity about ecosystems", materials: "e.g. Use the attached reading", audience: "e.g. Groups of four in Grade 7", amount: "e.g. 25 minutes", extra: "e.g. Use materials already in class" },
+    "zh-TW": { task: "例如：設計生態系小組活動", materials: "例如：使用附件閱讀材料", audience: "例如：七年級、每組四人", amount: "例如：25 分鐘", extra: "例如：只用教室現有材料" },
+  },
+  presentation: {
+    en: { task: "e.g. Create a parent briefing presentation", materials: "e.g. Use the event brief and schedule", audience: "e.g. Parents", amount: "e.g. 8 slides", extra: "e.g. One idea per slide" },
+    "zh-TW": { task: "例如：製作家長說明會簡報", materials: "例如：使用活動企劃與行程表", audience: "例如：家長", amount: "例如：8 頁", extra: "例如：每頁只放一個重點" },
+  },
+  website: {
+    en: { task: "e.g. Make a field-trip information site for parents", materials: "e.g. Use the itinerary and response-form link", audience: "e.g. Parents reading on phones", amount: "e.g. One page, 4–6 sections", extra: "e.g. No login or database" },
+    "zh-TW": { task: "例如：製作家長用的校外教學資訊站", materials: "例如：使用行程表與回覆表單連結", audience: "例如：用手機閱讀的家長", amount: "例如：一頁、4–6 個區塊", extra: "例如：不需要登入或資料庫" },
+  },
+  notice: {
+    en: { task: "e.g. Draft a schedule-change notice", materials: "e.g. Use the approved dates in the memo", audience: "e.g. All staff", amount: "e.g. Under 200 words", extra: "e.g. Put required action first" },
+    "zh-TW": { task: "例如：撰寫行程異動通知", materials: "例如：沿用公文核定日期", audience: "例如：全體教職員", amount: "例如：200 字內", extra: "例如：先寫需要採取的行動" },
+  },
+  meeting_minutes: {
+    en: { task: "e.g. Organize the department meeting minutes", materials: "e.g. Use the transcript and my notes", audience: "e.g. Meeting participants", amount: "e.g. One-page summary", extra: "e.g. Highlight owners and deadlines" },
+    "zh-TW": { task: "例如：整理處室會議紀錄", materials: "例如：使用逐字稿與我的筆記", audience: "例如：與會同仁", amount: "例如：一頁摘要", extra: "例如：標出負責人與期限" },
+  },
+  event_plan: {
+    en: { task: "e.g. Plan a new-teacher orientation", materials: "e.g. Use last year's schedule", audience: "e.g. New teachers", amount: "e.g. Half-day event", extra: "e.g. Mark decisions still pending" },
+    "zh-TW": { task: "例如：規劃新進教師研習", materials: "例如：參考去年流程", audience: "例如：新進教師", amount: "例如：半日活動", extra: "例如：標示尚未核定項目" },
+  },
+  sop: {
+    en: { task: "e.g. Create an equipment-booking SOP", materials: "e.g. Use the current policy file", audience: "e.g. New staff", amount: "e.g. 6–8 steps", extra: "e.g. Include exception handling" },
+    "zh-TW": { task: "例如：製作設備借用 SOP", materials: "例如：依現行規定檔案", audience: "例如：新進同仁", amount: "例如：6–8 個步驟", extra: "例如：加入例外處理" },
+  },
+  form: {
+    en: { task: "e.g. Design a workshop registration form", materials: "e.g. Use the event requirements", audience: "e.g. Teachers", amount: "e.g. Under 10 questions", extra: "e.g. Collect no unnecessary personal data" },
+    "zh-TW": { task: "例如：設計研習報名表", materials: "例如：依活動需求設計", audience: "例如：校內教師", amount: "例如：10 題以內", extra: "例如：不蒐集不必要個資" },
+  },
+  report: {
+    en: { task: "e.g. Summarize the survey findings", materials: "e.g. Use the uploaded spreadsheet", audience: "e.g. School leadership", amount: "e.g. Two-page brief", extra: "e.g. Separate facts from recommendations" },
+    "zh-TW": { task: "例如：整理問卷結果報告", materials: "例如：使用上傳的試算表", audience: "例如：校務主管", amount: "例如：兩頁摘要", extra: "例如：事實與建議分開" },
+  },
+  resource_guide: {
+    en: { task: "e.g. Build a new-teacher resource guide", materials: "e.g. Use the existing links list", audience: "e.g. New teachers", amount: "e.g. 5 categories", extra: "e.g. Add one next step per resource" },
+    "zh-TW": { task: "例如：製作新進教師資源指南", materials: "例如：使用既有連結清單", audience: "例如：新進教師", amount: "例如：5 個分類", extra: "例如：每項資源附一個下一步" },
+  },
+  other: {
+    en: { task: "Describe one result you want Kuse to create", materials: "What should Kuse use? You can also leave this blank.", audience: "Who will use the result?", amount: "How long or how many?", extra: "Anything Kuse should avoid or remember?" },
+    "zh-TW": { task: "用一句話說明想請 Kuse 完成的成果", materials: "Kuse 要依據什麼？也可以留白", audience: "誰會使用這個成果？", amount: "要多長或多少份量？", extra: "有什麼要避免或記得的嗎？" },
+  },
+};
+
 function initialInput(locale: Locale): KusePromptInput {
   return {
     role: "teacher",
@@ -106,6 +177,7 @@ function initialInput(locale: Locale): KusePromptInput {
     siteScope: "mvp",
     mustIncludeContent: "",
     linksAndActions: "",
+    executionMode: "quick",
     outputLanguage: locale,
   };
 }
@@ -137,9 +209,12 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   function toggleSource(source: KuseSource) {
     setInput((current) => ({
       ...current,
-      sources: current.sources.includes(source)
-        ? current.sources.filter((item) => item !== source)
-        : [...current.sources, source],
+      materialDetails: source === "no_material" ? "" : current.materialDetails,
+      sources: source === "no_material"
+        ? (current.sources.includes(source) ? [] : [source])
+        : current.sources.includes(source)
+          ? current.sources.filter((item) => item !== source)
+          : [...current.sources.filter((item) => item !== "no_material"), source],
     }));
   }
 
@@ -186,13 +261,14 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
     () => buildPromptDesignNotes(input, locale),
     [input, locale],
   );
+  const taskHints = TASK_HINTS[input.taskKind][locale];
 
-  function selectTask(taskKind: KuseTaskKind, taskLabel: string) {
+  function selectTask(taskKind: KuseTaskKind) {
     const isWebsite = taskKind === "website";
     setInput((current) => ({
       ...current,
       taskKind,
-      task: taskKind === "other" ? "" : taskLabel,
+      task: "",
       amount: isWebsite ? (locale === "zh-TW" ? "一頁式，4–6 個必要區塊" : "One page with 4–6 essential sections") : "",
       format: DEFAULT_FORMAT_BY_TASK[taskKind] ?? null,
       requirements: isWebsite ? ["shareable_page", "mobile_first", "working_actions"] : [],
@@ -248,7 +324,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                   key={option.id}
                   className={`kc-task-preset ${input.taskKind === option.id ? "is-active" : ""}`}
                   aria-pressed={input.taskKind === option.id}
-                  onClick={() => selectTask(option.id, option.label[locale])}
+                  onClick={() => selectTask(option.id)}
                 >
                   {option.label[locale]}
                 </button>
@@ -259,7 +335,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
               label={t.kuseBuilder.task.label}
               value={input.task}
               onChange={(task) => setInput((current) => ({ ...current, task }))}
-              placeholder={input.role === "teacher" ? t.kuseBuilder.task.teacherPlaceholder : t.kuseBuilder.task.adminPlaceholder}
+              placeholder={taskHints.task}
             />
             <BuilderNav
               back={t.nav.back}
@@ -286,14 +362,18 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 </button>
               ))}
             </div>
-            <BuilderTextarea
-              id="kuse-materials"
-              label={t.kuseBuilder.materials.label}
-              value={input.materialDetails}
-              onChange={(materialDetails) => setInput((current) => ({ ...current, materialDetails }))}
-              placeholder={t.kuseBuilder.materials.placeholder}
-              compact
-            />
+            {input.sources.includes("no_material") ? (
+              <p className="kc-no-material-note">{t.kuseBuilder.materials.noMaterialHint}</p>
+            ) : (
+              <BuilderTextarea
+                id="kuse-materials"
+                label={t.kuseBuilder.materials.label}
+                value={input.materialDetails}
+                onChange={(materialDetails) => setInput((current) => ({ ...current, materialDetails }))}
+                placeholder={taskHints.materials}
+                compact
+              />
+            )}
             <BuilderNav
               back={t.nav.back}
               next={t.nav.next}
@@ -305,20 +385,37 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
 
         {step === "specs" ? (
           <StepPanel key="kuse-specs" title={t.kuseBuilder.specs.title} subtitle={t.kuseBuilder.specs.subtitle}>
+            <button
+              type="button"
+              className={`kc-quick-mode ${input.executionMode === "quick" ? "is-active" : ""}`}
+              aria-pressed={input.executionMode === "quick"}
+              onClick={() => setInput((current) => ({
+                ...current,
+                executionMode: current.executionMode === "quick" ? "standard" : "quick",
+              }))}
+            >
+              <span aria-hidden>⚡</span>
+              <span>
+                <strong>{t.kuseBuilder.quick.title}</strong>
+                <small>{input.executionMode === "quick" ? t.kuseBuilder.quick.on : t.kuseBuilder.quick.off}</small>
+              </span>
+              <span className="kc-quick-state">{input.executionMode === "quick" ? t.kuseBuilder.quick.enabled : t.kuseBuilder.quick.disabled}</span>
+            </button>
+
             <div className="kc-spec-grid">
               <BuilderInput
                 id="kuse-audience"
                 label={t.kuseBuilder.specs.audience}
                 value={input.audience}
                 onChange={(audience) => setInput((current) => ({ ...current, audience }))}
-                placeholder={input.role === "teacher" ? t.kuseBuilder.specs.teacherAudience : t.kuseBuilder.specs.adminAudience}
+                placeholder={taskHints.audience}
               />
               <BuilderInput
                 id="kuse-amount"
                 label={input.taskKind === "website" ? t.kuseBuilder.website.size : t.kuseBuilder.specs.amount}
                 value={input.amount}
                 onChange={(amount) => setInput((current) => ({ ...current, amount }))}
-                placeholder={input.taskKind === "website" ? t.kuseBuilder.website.sizePlaceholder : t.kuseBuilder.specs.amountPlaceholder}
+                placeholder={input.taskKind === "website" ? t.kuseBuilder.website.sizePlaceholder : taskHints.amount}
               />
             </div>
 
@@ -367,78 +464,94 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                     placeholder={t.kuseBuilder.website.actionPlaceholder}
                   />
                 </div>
-                <BuilderInput
-                  id="kuse-style"
-                  label={t.kuseBuilder.website.style}
-                  value={input.visualStyle}
-                  onChange={(visualStyle) => setInput((current) => ({ ...current, visualStyle }))}
-                  placeholder={t.kuseBuilder.website.stylePlaceholder}
-                />
-                <div className="kc-spec-grid">
-                  <BuilderTextarea
-                    id="kuse-content"
-                    label={t.kuseBuilder.website.content}
-                    value={input.mustIncludeContent}
-                    onChange={(mustIncludeContent) => setInput((current) => ({ ...current, mustIncludeContent }))}
-                    placeholder={t.kuseBuilder.website.contentPlaceholder}
-                    compact
-                  />
-                  <BuilderTextarea
-                    id="kuse-links"
-                    label={t.kuseBuilder.website.links}
-                    value={input.linksAndActions}
-                    onChange={(linksAndActions) => setInput((current) => ({ ...current, linksAndActions }))}
-                    placeholder={t.kuseBuilder.website.linksPlaceholder}
-                    compact
-                  />
-                </div>
               </motion.div>
             ) : null}
 
-            <ChoiceGroup label={t.kuseBuilder.specs.format}>
-              {FORMATS.map((format) => (
-                <ChoiceButton
-                  key={format}
-                  active={input.format === format}
-                  onClick={() => setInput((current) => ({ ...current, format }))}
-                >
-                  {FORMAT_LABELS[format][locale]}
-                </ChoiceButton>
-              ))}
-            </ChoiceGroup>
+            <details className="kc-advanced-options">
+              <summary>
+                <span>
+                  <strong>{t.kuseBuilder.advanced.title}</strong>
+                  <small>{t.kuseBuilder.advanced.hint}</small>
+                </span>
+                <span aria-hidden>⌄</span>
+              </summary>
+              <div className="kc-advanced-body">
+                {input.taskKind === "website" ? (
+                  <>
+                    <BuilderInput
+                      id="kuse-style"
+                      label={t.kuseBuilder.website.style}
+                      value={input.visualStyle}
+                      onChange={(visualStyle) => setInput((current) => ({ ...current, visualStyle }))}
+                      placeholder={t.kuseBuilder.website.stylePlaceholder}
+                    />
+                    <div className="kc-spec-grid">
+                      <BuilderTextarea
+                        id="kuse-content"
+                        label={t.kuseBuilder.website.content}
+                        value={input.mustIncludeContent}
+                        onChange={(mustIncludeContent) => setInput((current) => ({ ...current, mustIncludeContent }))}
+                        placeholder={t.kuseBuilder.website.contentPlaceholder}
+                        compact
+                      />
+                      <BuilderTextarea
+                        id="kuse-links"
+                        label={t.kuseBuilder.website.links}
+                        value={input.linksAndActions}
+                        onChange={(linksAndActions) => setInput((current) => ({ ...current, linksAndActions }))}
+                        placeholder={t.kuseBuilder.website.linksPlaceholder}
+                        compact
+                      />
+                    </div>
+                  </>
+                ) : null}
 
-            <ChoiceGroup label={t.kuseBuilder.specs.tone}>
-              {TONES.map((tone) => (
-                <ChoiceButton
-                  key={tone}
-                  active={input.tone === tone}
-                  onClick={() => setInput((current) => ({ ...current, tone }))}
-                >
-                  {TONE_LABELS[tone][locale]}
-                </ChoiceButton>
-              ))}
-            </ChoiceGroup>
+                <ChoiceGroup label={t.kuseBuilder.specs.format}>
+                  {FORMATS.map((format) => (
+                    <ChoiceButton
+                      key={format}
+                      active={input.format === format}
+                      onClick={() => setInput((current) => ({ ...current, format }))}
+                    >
+                      {FORMAT_LABELS[format][locale]}
+                    </ChoiceButton>
+                  ))}
+                </ChoiceGroup>
 
-            <ChoiceGroup label={t.kuseBuilder.specs.mustInclude}>
-              {requirementOptions(input.role, input.taskKind).map((requirement) => (
-                <ChoiceButton
-                  key={requirement}
-                  active={input.requirements.includes(requirement)}
-                  onClick={() => toggleRequirement(requirement)}
-                >
-                  {REQUIREMENT_LABELS[requirement][locale]}
-                </ChoiceButton>
-              ))}
-            </ChoiceGroup>
+                <ChoiceGroup label={t.kuseBuilder.specs.tone}>
+                  {TONES.map((tone) => (
+                    <ChoiceButton
+                      key={tone}
+                      active={input.tone === tone}
+                      onClick={() => setInput((current) => ({ ...current, tone }))}
+                    >
+                      {TONE_LABELS[tone][locale]}
+                    </ChoiceButton>
+                  ))}
+                </ChoiceGroup>
 
-            <BuilderTextarea
-              id="kuse-constraints"
-              label={t.kuseBuilder.specs.extra}
-              value={input.extraConstraints}
-              onChange={(extraConstraints) => setInput((current) => ({ ...current, extraConstraints }))}
-              placeholder={t.kuseBuilder.specs.extraPlaceholder}
-              compact
-            />
+                <ChoiceGroup label={t.kuseBuilder.specs.mustInclude}>
+                  {requirementOptions(input.role, input.taskKind).map((requirement) => (
+                    <ChoiceButton
+                      key={requirement}
+                      active={input.requirements.includes(requirement)}
+                      onClick={() => toggleRequirement(requirement)}
+                    >
+                      {REQUIREMENT_LABELS[requirement][locale]}
+                    </ChoiceButton>
+                  ))}
+                </ChoiceGroup>
+
+                <BuilderTextarea
+                  id="kuse-constraints"
+                  label={t.kuseBuilder.specs.extra}
+                  value={input.extraConstraints}
+                  onChange={(extraConstraints) => setInput((current) => ({ ...current, extraConstraints }))}
+                  placeholder={taskHints.extra}
+                  compact
+                />
+              </div>
+            </details>
 
             <ChoiceGroup label={t.kuseBuilder.specs.outputLanguage}>
               <ChoiceButton

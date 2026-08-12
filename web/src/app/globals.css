@@ -1012,6 +1012,16 @@ input:focus-visible {
   min-height: 6.5rem;
 }
 
+.kc-no-material-note {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  color: #285b73;
+  background: rgba(92, 184, 178, 0.1);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
 .kc-builder-field input:focus,
 .kc-builder-field textarea:focus,
 .kc-kuse-result-card textarea:focus {
@@ -1025,8 +1035,124 @@ input:focus-visible {
   gap: 1rem;
 }
 
+.kc-quick-mode {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(27, 79, 156, 0.12);
+  border-radius: 1.15rem;
+  color: var(--kc-blue-deep);
+  background: rgba(255, 255, 255, 0.74);
+  text-align: left;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.kc-quick-mode:hover {
+  transform: translateY(-1px);
+  border-color: rgba(107, 61, 154, 0.28);
+}
+
+.kc-quick-mode.is-active {
+  border-color: rgba(92, 184, 178, 0.34);
+  background: linear-gradient(135deg, rgba(236, 249, 247, 0.96), rgba(255, 255, 255, 0.9));
+  box-shadow: 0 10px 28px rgba(35, 102, 116, 0.08);
+}
+
+.kc-quick-mode > span:first-child {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border-radius: 0.8rem;
+  background: rgba(92, 184, 178, 0.13);
+}
+
+.kc-quick-mode strong,
+.kc-quick-mode small {
+  display: block;
+}
+
+.kc-quick-mode strong {
+  font-size: 0.85rem;
+}
+
+.kc-quick-mode small {
+  margin-top: 0.18rem;
+  color: var(--kc-text-soft);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.kc-quick-state {
+  padding: 0.28rem 0.55rem;
+  border-radius: 9999px;
+  color: var(--kc-purple);
+  background: rgba(107, 61, 154, 0.08);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
 .kc-choice-group {
   margin-top: 1.5rem;
+}
+
+.kc-advanced-options {
+  margin-top: 1rem;
+  border: 1px solid rgba(27, 79, 156, 0.1);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.kc-advanced-options > summary {
+  display: flex;
+  min-height: 4.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--kc-blue-deep);
+  cursor: pointer;
+  list-style: none;
+}
+
+.kc-advanced-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+.kc-advanced-options summary strong,
+.kc-advanced-options summary small {
+  display: block;
+}
+
+.kc-advanced-options summary strong {
+  font-size: 0.82rem;
+}
+
+.kc-advanced-options summary small {
+  margin-top: 0.2rem;
+  color: var(--kc-text-soft);
+  font-size: 0.67rem;
+}
+
+.kc-advanced-options > summary > span:last-child {
+  transition: transform 180ms ease;
+}
+
+.kc-advanced-options[open] > summary > span:last-child {
+  transform: rotate(180deg);
+}
+
+.kc-advanced-body {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid rgba(27, 79, 156, 0.07);
+}
+
+.kc-advanced-body > .kc-builder-field:first-child {
+  margin-top: 1rem;
 }
 
 .kc-choice-group > div {
@@ -1356,6 +1482,7 @@ input:focus-visible {
 
 .kc-learning-body ol {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.7rem;
   margin-top: 1rem;
   padding: 0;
@@ -1366,8 +1493,10 @@ input:focus-visible {
 .kc-learning-body li {
   position: relative;
   display: grid;
-  gap: 0.28rem;
-  padding: 0.85rem 0.95rem 0.85rem 2.9rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem 0.7rem 2.65rem;
   border-radius: 1rem;
   background: rgba(239, 244, 251, 0.72);
   counter-increment: prompt-note;
@@ -1375,7 +1504,7 @@ input:focus-visible {
 
 .kc-learning-body li::before {
   position: absolute;
-  top: 0.82rem;
+  top: 0.68rem;
   left: 0.9rem;
   display: grid;
   width: 1.35rem;
@@ -1396,8 +1525,8 @@ input:focus-visible {
 
 .kc-learning-body li > span {
   color: var(--kc-text-soft);
-  font-size: 0.74rem;
-  line-height: 1.58;
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
 .kc-learning-transfer {
@@ -1572,7 +1701,8 @@ input:focus-visible {
   .kc-spec-grid,
   .kc-builder-summary,
   .kc-site-scope-grid,
-  .kc-model-grid {
+  .kc-model-grid,
+  .kc-learning-body ol {
     grid-template-columns: 1fr;
   }
 

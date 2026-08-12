@@ -19,6 +19,7 @@ export type KuseTaskKind =
   | "other";
 export type KuseSource =
   | "kuse_textbook"
+  | "no_material"
   | "uploaded_pdf"
   | "lesson_text"
   | "own_notes"
@@ -35,6 +36,7 @@ export type KuseFormat =
   | "notice";
 export type KuseTone = "clear" | "friendly" | "formal" | "concise";
 export type KuseSiteScope = "mvp" | "complete";
+export type KuseExecutionMode = "quick" | "standard";
 export type KuseRequirement =
   | "learning_objectives"
   | "teaching_steps"
@@ -69,6 +71,7 @@ export type KusePromptInput = {
   siteScope: KuseSiteScope;
   mustIncludeContent: string;
   linksAndActions: string;
+  executionMode: KuseExecutionMode;
   outputLanguage: Locale;
 };
 
@@ -80,7 +83,8 @@ export type PromptDesignNote = {
 };
 
 export const SOURCE_LABELS: LabelMap<KuseSource> = {
-  kuse_textbook: { en: "Kang Hsuan textbook / chapter", "zh-TW": "康軒教材／章節" },
+  kuse_textbook: { en: "Kuse built-in teaching material", "zh-TW": "Kuse 內建教材" },
+  no_material: { en: "I don't have source material", "zh-TW": "我沒有資料" },
   uploaded_pdf: { en: "Uploaded PDF", "zh-TW": "上傳的 PDF" },
   lesson_text: { en: "Lesson text / reference passage", "zh-TW": "課文／參考文字" },
   own_notes: { en: "My notes or draft", "zh-TW": "自己的筆記／草稿" },
@@ -137,81 +141,61 @@ function field(value: string, fallback: string) {
 
 export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): PromptDesignNote[] {
   const sources = selectedLabels(input.sources, SOURCE_LABELS, locale);
-  const format = input.format ? FORMAT_LABELS[input.format][locale] : "";
-  const requirements = selectedLabels(input.requirements, REQUIREMENT_LABELS, locale);
+  const isNoMaterial = input.sources.includes("no_material");
 
   if (locale === "zh-TW") {
     const notes: PromptDesignNote[] = [
       {
-        title: "先界定角色與單一任務",
-        body: `我把 AI 的角色限定為${input.role === "teacher" ? "教學設計夥伴" : "校務工作夥伴"}，並要求一次只完成「${field(input.task, "這項任務")}」，避免回答在過程中擴張成一堆不需要的成品。`,
+        title: "任務",
+        body: `${input.role === "teacher" ? "教學夥伴" : "行政夥伴"}・只做「${field(input.task, "這項任務")}」。`,
       },
       {
-        title: "把材料變成事實邊界",
-        body: sources
-          ? `我指定優先依據為「${sources}」，同時禁止自行補造日期、數據、規定與引用。這能降低內容看似完整、其實沒有根據的風險。`
-          : "目前沒有指定材料，所以我要求 Kuse 在需要事實時先索取資料，而不是自行猜測。",
+        title: "材料",
+        body: isNoMaterial ? "沒有資料也能先做；校內事實留待補。" : sources ? `優先使用：${sources}。` : "需要資料時，讓 Kuse 一次問完。",
       },
       {
-        title: "把模糊需求改成完成判準",
-        body: `我補上使用對象「${field(input.audience, "待確認")}」、規模「${field(input.amount, "待確認")}」${format ? `、格式「${format}」` : ""}${requirements ? `，並列出「${requirements}」等必要內容` : ""}。這些條件讓我們可以檢查成品是否真的可用。`,
+        title: "規格",
+        body: `${field(input.audience, "對象待確認")}・${field(input.amount, "長度由 Kuse 建議")}`,
       },
     ];
 
+    if (input.executionMode === "quick") {
+      notes.push({ title: "速度", body: "少問、少規劃，先交付可用初稿。" });
+    }
     if (input.taskKind === "website") {
       notes.push({
-        title: input.siteScope === "mvp" ? "先做可用的 MVP" : "分階段完成完整版本",
+        title: "網站",
         body: input.siteScope === "mvp"
-          ? "我把網站限制為一頁、4–6 個必要區塊與一個主要行動，先證明它有用，再決定是否擴充；也排除登入、資料庫與未要求的複雜功能。"
-          : "我要求先交付可用核心頁面，再逐步補次要頁面與功能，避免一次把需求擴張成難以完成的大型系統。",
-      });
-      notes.push({
-        title: "指定真正可分享的交付物",
-        body: "我明確要求使用 Kuse Web Page／AI Pages，不接受獨立 HTML 或簡報；成品完成後走 Kuse 內建發布流程。畫面出現「Publish now」時由使用者點一次，完成後取得公開網址，不需要到其他平台部署。",
+          ? "一頁、4–6 區塊；完成後點 Publish now。"
+          : "先做核心頁面；完成後點 Publish now。",
       });
     }
-
-    notes.push({
-      title: "保留人工判斷的位置",
-      body: "我要求缺少依據的正確性、日期、法規與引用標示為「待人工查證」，並排除真實學生與人事敏感資料。結構化 Prompt 是協作規格，不是把專業責任交給 AI。",
-    });
     return notes;
   }
 
   const notes: PromptDesignNote[] = [
     {
-      title: "Define one role and one task",
-      body: `I constrained the AI to act as ${input.role === "teacher" ? "an instructional design partner" : "a school operations partner"} and complete only “${field(input.task, "this task")}.” This prevents the response from expanding into unrelated deliverables.`,
+      title: "Task",
+      body: `${input.role === "teacher" ? "Teaching partner" : "Operations partner"} · only “${field(input.task, "this task")}.”`,
     },
     {
-      title: "Turn sources into factual boundaries",
-      body: sources
-        ? `I prioritized “${sources}” and prohibited invented dates, figures, policy, and citations. This reduces polished-looking content that has no evidence.`
-        : "No source is selected, so Kuse must ask for facts when needed instead of guessing.",
+      title: "Sources",
+      body: isNoMaterial ? "Start without sources; leave school facts blank." : sources ? `Use first: ${sources}.` : "Let Kuse ask once if sources are needed.",
     },
-    {
-      title: "Turn a vague request into completion criteria",
-      body: `I specified the audience “${field(input.audience, "to be confirmed")},” scope “${field(input.amount, "to be confirmed")}”${format ? `, format “${format}”` : ""}${requirements ? `, and required elements such as “${requirements}”` : ""}. These make the output checkable rather than merely impressive.`,
-    },
+    { title: "Output", body: `${field(input.audience, "Audience to confirm")} · ${field(input.amount, "Let Kuse suggest the length")}` },
   ];
 
+  if (input.executionMode === "quick") {
+    notes.push({ title: "Speed", body: "Ask less, plan less, deliver a usable draft first." });
+  }
   if (input.taskKind === "website") {
     notes.push({
-      title: input.siteScope === "mvp" ? "Start with a usable MVP" : "Build the complete version in stages",
+      title: "Website",
       body: input.siteScope === "mvp"
-        ? "I limited the site to one page, 4–6 essential sections, and one primary action. It proves value first and excludes authentication, databases, and unrequested complex features."
-        : "I required the usable core pages first, followed by secondary pages and functions, so the task does not expand into an oversized system.",
-    });
-    notes.push({
-      title: "Name the genuinely shareable deliverable",
-      body: "I explicitly requested a Kuse Web Page / AI Pages result—not standalone HTML or slides—and Kuse's built-in publishing flow. The user clicks “Publish now” once when it appears, then gets the public URL without deploying elsewhere.",
+        ? "One page, 4–6 sections; then click Publish now."
+        : "Build core pages first; then click Publish now.",
     });
   }
-
-  notes.push({
-    title: "Keep professional judgment in the loop",
-    body: "I required unsupported accuracy, dates, policy, and citations to be marked for manual verification and excluded real student or staff sensitive data. A structured prompt is a collaboration specification, not a transfer of professional responsibility.",
-  });
   return notes;
 }
 
@@ -223,6 +207,7 @@ export function buildKusePrompt(input: KusePromptInput): string {
   const tone = input.tone ? TONE_LABELS[input.tone][locale] : "";
   const isWebsite = input.taskKind === "website";
   const isMvpWebsite = isWebsite && input.siteScope === "mvp";
+  const isNoMaterial = input.sources.includes("no_material");
   const zhTaskRule: Record<KuseTaskKind, string> = {
     teaching_material: "教材內容需對齊指定材料、使用對象與學習目標，並提供可直接使用的清楚結構。",
     lesson_plan: "教案需對齊學習目標，清楚列出教學流程、所需材料與可檢查的學習成果。",
@@ -272,9 +257,9 @@ export function buildKusePrompt(input: KusePromptInput): string {
       `請只完成以下一項任務：${field(input.task, "請先詢問我要完成的單一任務")}`,
       "",
       "【材料】",
-      sources ? `優先依據：${sources}。` : "目前未指定材料；若完成任務需要資料，請先向我索取。",
+      isNoMaterial ? "我目前沒有資料可提供。可用一般知識先完成初稿；校內日期、數字、規定與連結請保留待補。" : sources ? `優先依據：${sources}。` : "目前未指定材料；若完成任務需要資料，請一次向我索取。",
       input.materialDetails.trim() ? `材料說明：${input.materialDetails.trim()}` : "",
-      "只能依據我提供或指定的材料，不要自行補造教材內容、數據、日期、法規或引用來源。",
+      isNoMaterial ? "不要自行補造校內資訊、數據、日期、法規或引用來源。" : "只能依據我提供或指定的材料，不要自行補造教材內容、數據、日期、法規或引用來源。",
       "",
       "【輸出規格】",
       `使用對象：${field(input.audience, "未指定；請先詢問")}`,
@@ -293,7 +278,9 @@ export function buildKusePrompt(input: KusePromptInput): string {
       isWebsite ? `按鈕與連結：${field(input.linksAndActions, "沒有真實網址時使用清楚標示的待補連結，不要做無功能按鈕")}` : "",
       "",
       "【工作規則】",
-      "1. 先檢查角色、任務、材料與規格是否足夠；不清楚的地方先提問，不要自行假設。",
+      input.executionMode === "quick" ? "【精簡模式】" : "",
+      input.executionMode === "quick" ? "優先直接完成最小可用成果。必要時最多集中提問一次、最多 3 題；不要長篇說明計畫或重複確認。結尾最多列 3 項待人工確認內容。" : "",
+      "1. 先檢查角色、任務、材料與規格是否足夠；必要缺漏集中提問，不要自行假設。",
       "2. 一次只處理這一項任務，不延伸成其他未要求的內容。",
       `3. ${zhTaskRule[input.taskKind]}`,
       "4. 先產出可直接使用的完整初稿，再列出需要人工確認的項目。",
@@ -320,9 +307,9 @@ export function buildKusePrompt(input: KusePromptInput): string {
     `Complete only this one task: ${field(input.task, "Ask me to define one task before continuing")}`,
     "",
     "[MATERIALS]",
-    sources ? `Use these sources first: ${sources}.` : "No source is selected. Ask me for material if the task requires it.",
+    isNoMaterial ? "I do not have source material. Use general knowledge for a first draft, but leave school-specific dates, figures, policy, and links as placeholders." : sources ? `Use these sources first: ${sources}.` : "No source is selected. Ask once for material if the task requires it.",
     input.materialDetails.trim() ? `Material notes: ${input.materialDetails.trim()}` : "",
-    "Use only the materials I provide or identify. Do not invent textbook content, data, dates, policy, or citations.",
+    isNoMaterial ? "Do not invent school-specific facts, figures, dates, policy, or citations." : "Use only the materials I provide or identify. Do not invent textbook content, data, dates, policy, or citations.",
     "",
     "[OUTPUT SPECIFICATIONS]",
     `Audience: ${field(input.audience, "Not specified — ask me first")}`,
@@ -341,7 +328,9 @@ export function buildKusePrompt(input: KusePromptInput): string {
     isWebsite ? `Buttons and links: ${field(input.linksAndActions, "Use clearly marked placeholders when a real URL is unavailable; never create non-functional buttons")}` : "",
     "",
     "[WORKING RULES]",
-    "1. Check whether the role, task, materials, and specifications are sufficient. Ask focused questions when anything is unclear; do not assume.",
+    input.executionMode === "quick" ? "[QUICK MODE]" : "",
+    input.executionMode === "quick" ? "Prioritize the smallest usable result. If essential, ask only one consolidated set of up to 3 questions. Do not give a long plan or repeat confirmations. End with no more than 3 items for human review." : "",
+    "1. Check whether the role, task, materials, and specifications are sufficient. Consolidate essential questions; do not assume.",
     "2. Handle only this task. Do not expand into unrelated deliverables.",
     `3. ${enTaskRule[input.taskKind]}`,
     "4. Produce a complete, usable first draft, followed by a short list of items that need human review.",
