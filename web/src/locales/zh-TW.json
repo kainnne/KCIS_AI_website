@@ -138,12 +138,21 @@
       "title": "進入 Kuse 後請選這個模型",
       "qualityFirst": "品質優先權重",
       "recommended": "本次任務首選",
-      "signals": "影響分數的條件"
+      "signals": "影響分數的條件",
+      "compareTitle": "看看其他模型的優缺點",
+      "compareHint": "每個模型都有適合的工作，也有要注意的地方。",
+      "currentBest": "這次最適合",
+      "goodAt": "擅長：",
+      "watchFor": "要注意："
     },
     "learning": {
       "title": "這份 Prompt 為什麼這樣設計？",
       "hint": "用 10 秒看懂自己做了哪些選擇。",
+      "modeLabel": "說明深度",
+      "quickMode": "10 秒版",
+      "detailMode": "我想了解更多",
       "intro": "你剛才做了這些 Prompt 設計：",
+      "detailIntro": "下面會說明每一項選擇，如何幫 Kuse 做出更實用的結果：",
       "transferTitle": "下次自己寫",
       "transferBody": "先回答五個小問題：",
       "framework": ["AI 是誰？", "只做哪一件事？", "依據什麼？", "給誰、用什麼形式？", "我要怎麼驗收？"]

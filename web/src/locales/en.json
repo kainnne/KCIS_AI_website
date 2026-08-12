@@ -138,12 +138,21 @@
       "title": "Choose this model in Kuse",
       "qualityFirst": "Quality-first weighting",
       "recommended": "Recommended for this task",
-      "signals": "Why the score changed"
+      "signals": "Why the score changed",
+      "compareTitle": "Compare the other models",
+      "compareHint": "See what each model is good at—and where it may be less suitable.",
+      "currentBest": "Best fit now",
+      "goodAt": "Good at: ",
+      "watchFor": "Keep in mind: "
     },
     "learning": {
       "title": "Why is this prompt designed this way?",
       "hint": "A 10-second review of your choices.",
+      "modeLabel": "Explanation depth",
+      "quickMode": "10-second version",
+      "detailMode": "I want to learn more",
       "intro": "You made these prompt choices:",
+      "detailIntro": "Here is how each choice helps Kuse produce a more useful result:",
       "transferTitle": "Write your own next time",
       "transferBody": "Answer these five short questions:",
       "framework": ["Who should AI be?", "What one task?", "Based on what?", "For whom and in what form?", "How will I check it?"]

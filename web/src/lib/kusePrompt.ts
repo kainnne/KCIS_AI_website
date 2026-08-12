@@ -199,6 +199,110 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
   return notes;
 }
 
+export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: Locale): PromptDesignNote[] {
+  const sources = selectedLabels(input.sources, SOURCE_LABELS, locale);
+  const requirements = selectedLabels(input.requirements, REQUIREMENT_LABELS, locale);
+  const format = input.format ? FORMAT_LABELS[input.format][locale] : "";
+  const tone = input.tone ? TONE_LABELS[input.tone][locale] : "";
+  const isNoMaterial = input.sources.includes("no_material");
+
+  if (locale === "zh-TW") {
+    const notes: PromptDesignNote[] = [
+      {
+        title: "1. 先說 AI 是誰",
+        body: input.role === "teacher"
+          ? "我把 AI 設定成教學設計夥伴，讓它用老師真正能採用的方式整理內容。"
+          : "我把 AI 設定成行政工作夥伴，讓它優先考慮清楚、可執行與方便交接。",
+      },
+      {
+        title: "2. 一次只做一件事",
+        body: `這次只完成「${field(input.task, "這項任務")}」，避免 Kuse 自動延伸成不需要的簡報、報告或其他成品。`,
+      },
+      {
+        title: "3. 說清楚資料邊界",
+        body: isNoMaterial
+          ? "你選擇沒有資料，所以 Kuse 可以先做通用初稿；校內日期、數字、規定與連結必須留待補。"
+          : sources
+            ? `你指定優先使用「${sources}」。沒有出現在材料裡的校內事實，Kuse 不應自己猜。`
+            : "你沒有指定材料。若任務真的需要資料，Kuse 會集中問一次；不需要時就直接先做。",
+      },
+      {
+        title: "4. 設定怎樣才算完成",
+        body: `使用對象是「${field(input.audience, "尚未指定")}」，份量是「${field(input.amount, "交給 Kuse 建議")}」${format ? `，格式採「${format}」` : ""}${tone ? `，語氣採「${tone}」` : ""}${requirements ? `，並加入「${requirements}」` : ""}。這些都是驗收條件，不是漂亮但空泛的形容詞。`,
+      },
+    ];
+
+    if (input.executionMode === "quick") {
+      notes.push({
+        title: "5. 用精簡模式換速度",
+        body: "Kuse 最多集中問一次、一次不超過三題；它會略過長篇規劃，先交付最小可用初稿，再讓你決定要不要加深。",
+      });
+    }
+
+    if (input.taskKind === "website") {
+      notes.push({
+        title: `${notes.length + 1}. 網站要能真的分享`,
+        body: input.siteScope === "mvp"
+          ? "網站先限制成一頁、4–6 個必要區塊與一個主要行動。完成後使用 Kuse Page 的 Publish now 取得網址，不下載獨立 HTML。"
+          : "網站先完成核心頁面再擴充。完成後使用 Kuse Page 的 Publish now 取得網址，不下載獨立 HTML。",
+      });
+    }
+
+    notes.push({
+      title: `${notes.length + 1}. 最後仍要由人判斷`,
+      body: "AI 可以加快初稿，但日期、規定、引用、適齡性與敏感資料仍要由同仁確認；沒有依據的內容應標示待查證。",
+    });
+    return notes;
+  }
+
+  const notes: PromptDesignNote[] = [
+    {
+      title: "1. Give AI a role",
+      body: input.role === "teacher"
+        ? "AI is a teaching-design partner, so it should organize work in a form teachers can actually use."
+        : "AI is an operations partner, so it should prioritize clarity, action, and handoff.",
+    },
+    {
+      title: "2. Keep it to one task",
+      body: `Kuse should complete only “${field(input.task, "this task")}” instead of expanding into slides, reports, or other unrequested deliverables.`,
+    },
+    {
+      title: "3. Set a source boundary",
+      body: isNoMaterial
+        ? "You have no source material, so Kuse can draft generally but must leave school-specific dates, figures, policy, and links as placeholders."
+        : sources
+          ? `Use “${sources}” first. Kuse should not guess school facts that are absent from those sources.`
+          : "No source is selected. Kuse can ask once if the task truly needs one; otherwise it should start.",
+    },
+    {
+      title: "4. Define what done looks like",
+      body: `Audience: “${field(input.audience, "not specified")}.” Scope: “${field(input.amount, "let Kuse suggest it")}.”${format ? ` Format: “${format}.”` : ""}${tone ? ` Tone: “${tone}.”` : ""}${requirements ? ` Include: “${requirements}.”` : ""} These are practical review criteria.`,
+    },
+  ];
+
+  if (input.executionMode === "quick") {
+    notes.push({
+      title: "5. Trade depth for speed when appropriate",
+      body: "Kuse asks only one consolidated set of up to three questions, skips a long planning speech, and delivers the smallest usable draft first.",
+    });
+  }
+
+  if (input.taskKind === "website") {
+    notes.push({
+      title: `${notes.length + 1}. Make the website genuinely shareable`,
+      body: input.siteScope === "mvp"
+        ? "Keep it to one page, 4–6 essential sections, and one primary action. Use Publish now for a Kuse Page URL instead of downloading standalone HTML."
+        : "Build the core pages first, then expand. Use Publish now for a Kuse Page URL instead of downloading standalone HTML.",
+    });
+  }
+
+  notes.push({
+    title: `${notes.length + 1}. Keep a human in the loop`,
+    body: "AI speeds up the draft, but staff still verify dates, policy, citations, age suitability, and sensitive information. Unsupported content should be marked for review.",
+  });
+  return notes;
+}
+
 export function buildKusePrompt(input: KusePromptInput): string {
   const locale = input.outputLanguage;
   const sources = selectedLabels(input.sources, SOURCE_LABELS, locale);

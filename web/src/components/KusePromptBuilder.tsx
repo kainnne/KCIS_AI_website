@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import {
   buildKusePrompt,
+  buildDetailedPromptDesignNotes,
   buildPromptDesignNotes,
   FORMAT_LABELS,
   REQUIREMENT_LABELS,
@@ -189,6 +190,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   const [input, setInput] = useState<KusePromptInput>(() => initialInput(locale));
   const [draftPrompt, setDraftPrompt] = useState("");
   const [copied, setCopied] = useState(false);
+  const [learningDetailed, setLearningDetailed] = useState(false);
 
   const stepIndex = Math.max(0, ["role", "task", "materials", "specs"].indexOf(step));
 
@@ -246,6 +248,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
     setInput(initialInput(locale));
     setDraftPrompt("");
     setCopied(false);
+    setLearningDetailed(false);
     go("role");
   }
 
@@ -259,6 +262,10 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   );
   const promptDesignNotes = useMemo(
     () => buildPromptDesignNotes(input, locale),
+    [input, locale],
+  );
+  const detailedPromptDesignNotes = useMemo(
+    () => buildDetailedPromptDesignNotes(input, locale),
     [input, locale],
   );
   const taskHints = TASK_HINTS[input.taskKind][locale];
@@ -628,6 +635,27 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 {modelRecommendation.signals.map((signal) => <small key={signal}>{signal}</small>)}
               </div>
               <p className="kc-model-note">{modelRecommendation.availabilityNote}</p>
+              <details className="kc-model-compare">
+                <summary>
+                  <span>
+                    <strong>{t.kuseBuilder.model.compareTitle}</strong>
+                    <small>{t.kuseBuilder.model.compareHint}</small>
+                  </span>
+                  <span aria-hidden>⌄</span>
+                </summary>
+                <div className="kc-model-compare-grid">
+                  {modelRecommendation.allModels.map((model) => (
+                    <article key={model.id} className={model.id === modelRecommendation.recommended.id ? "is-current" : ""}>
+                      <div>
+                        <strong>{model.name}</strong>
+                        {model.id === modelRecommendation.recommended.id ? <span>{t.kuseBuilder.model.currentBest}</span> : null}
+                      </div>
+                      <p><b>{t.kuseBuilder.model.goodAt}</b>{model.strength[locale]}</p>
+                      <p><b>{t.kuseBuilder.model.watchFor}</b>{model.tradeoff[locale]}</p>
+                    </article>
+                  ))}
+                </div>
+              </details>
             </section>
 
             <details className="kc-prompt-learning">
@@ -640,9 +668,27 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 <span className="kc-learning-chevron" aria-hidden>⌄</span>
               </summary>
               <div className="kc-learning-body">
-                <p>{t.kuseBuilder.learning.intro}</p>
-                <ol>
-                  {promptDesignNotes.map((note) => (
+                <div className="kc-learning-modes" role="group" aria-label={t.kuseBuilder.learning.modeLabel}>
+                  <button
+                    type="button"
+                    className={!learningDetailed ? "is-active" : ""}
+                    aria-pressed={!learningDetailed}
+                    onClick={() => setLearningDetailed(false)}
+                  >
+                    {t.kuseBuilder.learning.quickMode}
+                  </button>
+                  <button
+                    type="button"
+                    className={learningDetailed ? "is-active" : ""}
+                    aria-pressed={learningDetailed}
+                    onClick={() => setLearningDetailed(true)}
+                  >
+                    {t.kuseBuilder.learning.detailMode}
+                  </button>
+                </div>
+                <p>{learningDetailed ? t.kuseBuilder.learning.detailIntro : t.kuseBuilder.learning.intro}</p>
+                <ol className={learningDetailed ? "is-detailed" : ""}>
+                  {(learningDetailed ? detailedPromptDesignNotes : promptDesignNotes).map((note) => (
                     <li key={note.title}>
                       <strong>{note.title}</strong>
                       <span>{note.body}</span>

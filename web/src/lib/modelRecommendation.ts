@@ -13,6 +13,7 @@ type ModelProfile = {
   id: ModelId;
   name: string;
   strength: Record<Locale, string>;
+  tradeoff: Record<Locale, string>;
 };
 
 export type ModelChoice = ModelProfile & {
@@ -27,6 +28,7 @@ export type ModelRecommendation = {
   method: string;
   alternativeLabel: string;
   availabilityNote: string;
+  allModels: ModelChoice[];
 };
 
 const MODELS: ModelProfile[] = [
@@ -37,6 +39,10 @@ const MODELS: ModelProfile[] = [
       en: "deep analysis, high-stakes documents, and complex planning",
       "zh-TW": "深度分析、高重要性文件與複雜規劃",
     },
+    tradeoff: {
+      en: "it is only moderate in speed, so a short everyday task can be overkill",
+      "zh-TW": "速度較中等，短小的日常任務可能有點大材小用",
+    },
   },
   {
     id: "claude-sonnet",
@@ -44,6 +50,10 @@ const MODELS: ModelProfile[] = [
     strength: {
       en: "reliable everyday drafting, clear writing, and balanced speed",
       "zh-TW": "穩定的日常草擬、清楚文字與均衡速度",
+    },
+    tradeoff: {
+      en: "for very long, high-stakes analysis, Opus gives the task more depth",
+      "zh-TW": "遇到很長、很重要的深度分析，Opus 通常更合適",
     },
   },
   {
@@ -53,6 +63,10 @@ const MODELS: ModelProfile[] = [
       en: "general reasoning, coding, and turning requirements into working structures",
       "zh-TW": "通用推理、程式與把需求轉成可運作結構",
     },
+    tradeoff: {
+      en: "it uses the highest cost tier on Kuse, so it is unnecessary for a very simple quick draft",
+      "zh-TW": "在 Kuse 屬於較高點數層級，很簡單的快速初稿不一定需要用到它",
+    },
   },
   {
     id: "gpt-4-5",
@@ -60,6 +74,10 @@ const MODELS: ModelProfile[] = [
     strength: {
       en: "code generation, review, and debugging",
       "zh-TW": "程式生成、檢查與除錯",
+    },
+    tradeoff: {
+      en: "its advantage is more technical, so it is less natural as the first choice for ordinary teaching copy or visual presentations",
+      "zh-TW": "優勢比較偏技術工作，一般教材文字或視覺簡報不一定要先選它",
     },
   },
   {
@@ -69,6 +87,10 @@ const MODELS: ModelProfile[] = [
       en: "multimodal sources, long documents, data, and visual deliverables",
       "zh-TW": "多模態材料、長文件、資料與視覺型產出",
     },
+    tradeoff: {
+      en: "for a short text-only task, Flash or Sonnet usually gets you there with less overhead",
+      "zh-TW": "如果只是短篇純文字，Flash 或 Sonnet 通常更俐落",
+    },
   },
   {
     id: "gemini-flash",
@@ -76,6 +98,10 @@ const MODELS: ModelProfile[] = [
     strength: {
       en: "fast iteration, simple tasks, and lightweight first versions",
       "zh-TW": "快速迭代、簡單任務與輕量第一版",
+    },
+    tradeoff: {
+      en: "it prioritizes speed, so complex planning or high-stakes documents deserve a deeper model and human review",
+      "zh-TW": "它偏重速度，複雜規劃或重要文件仍適合換深度模型並人工複核",
     },
   },
 ];
@@ -176,8 +202,8 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
   const ranked = [...MODELS].sort((a, b) => scores[b.id] - scores[a.id]);
   const focus = TASK_FOCUS[input.taskKind][locale];
   const explain = (model: ModelProfile) => locale === "zh-TW"
-    ? `這項任務重視${focus}；${model.name} 適合${model.strength[locale]}，因此在本次條件中得到較高權重。`
-    : `This task prioritizes ${focus}. ${model.name} is strong at ${model.strength[locale]}, so it receives a higher weight for these inputs.`;
+    ? `這次要做的是${focus}，選 ${model.name} 會比較順手。它很會${model.strength[locale]}；不過${model.tradeoff[locale]}。`
+    : `You need ${focus}, so ${model.name} should feel like the smoother choice. It is good at ${model.strength[locale]}; however, ${model.tradeoff[locale]}.`;
 
   const recommended = ranked[0];
   const alternative = ranked[1];
@@ -189,9 +215,14 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     method: locale === "zh-TW"
       ? "依任務、材料、範圍與速度推薦；點數充足時以適配度為主，開啟精簡模式時才提高快速模型權重。"
       : "The score uses task, sources, scope, and speed. It favors task fit unless Quick mode raises the weight of faster models.",
-    alternativeLabel: locale === "zh-TW" ? "若首選忙碌或想加快速度，可改用" : "Use this when the first choice is busy or you want a faster alternative",
+    alternativeLabel: locale === "zh-TW" ? "想換一種取向，也可以考慮" : "For a different balance, also consider",
     availabilityNote: locale === "zh-TW"
       ? "Kuse 的模型名稱可能更新；請選同系列最接近且帳號中可用的版本。未公開能力定位的模型不會被本工具猜測評分。"
       : "Model names in Kuse may change. Choose the closest available version in the same family. Models without a published capability profile are not guessed or scored.",
+    allModels: ranked.map((model) => ({
+      ...model,
+      score: scores[model.id],
+      explanation: explain(model),
+    })),
   };
 }
