@@ -4,7 +4,7 @@
 
 ## 線上網站
 
-**https://kainnne.github.io/KCIS_AI_website/**
+**https://ai-tools.kcis.kainnne.com/**
 
 ## 本機執行
 
@@ -22,5 +22,6 @@ npm run dev
 
 ## 部署備註
 
-- 公開站：GitHub Actions → GitHub Pages（`web/` 靜態匯出，`GITHUB_PAGES=true` 時使用 `basePath: /KCIS_AI_website`）
-- 若改接 Vercel：Root Directory 設 `web`，且**不要**設 `GITHUB_PAGES=true`（即可無 basePath）
+- 公開站：GitHub Actions → GitHub Pages（`web/` 靜態匯出，自訂網域從 `/` 提供服務）
+- 自訂網域：`ai-tools.kcis.kainnne.com`（DNS CNAME 指向 `kainnne.github.io`）
+- 若未來需要部署到子路徑，可在建置時設定 `NEXT_PUBLIC_BASE_PATH`

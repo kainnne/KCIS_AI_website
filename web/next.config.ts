@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
-/** GitHub Pages: https://kainnne.github.io/KCIS_AI_website/ */
-const isGithubPages = process.env.GITHUB_PAGES === "true";
-const basePath = isGithubPages ? "/KCIS_AI_website" : "";
+/**
+ * The custom GitHub Pages domain is served from `/`.
+ * Set NEXT_PUBLIC_BASE_PATH only when intentionally deploying under a subpath.
+ */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const nextConfig: NextConfig = {
   output: "export",
