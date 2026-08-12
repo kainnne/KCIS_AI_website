@@ -113,6 +113,7 @@ const TASK_FOCUS: Record<KuseTaskKind, Record<Locale, string>> = {
   assessment: { en: "accurate, checkable assessment design", "zh-TW": "正確且可檢查的評量設計" },
   class_activity: { en: "practical classroom activity design", "zh-TW": "可執行的課堂活動設計" },
   presentation: { en: "visual structure and presentation flow", "zh-TW": "視覺結構與簡報敘事" },
+  poster: { en: "a clear, finished visual artifact", "zh-TW": "清楚而完整的視覺成品" },
   website: { en: "a working, shareable website", "zh-TW": "可運作、可分享的網站" },
   notice: { en: "clear operational communication", "zh-TW": "清楚的行政溝通" },
   meeting_minutes: { en: "faithful decisions and action tracking", "zh-TW": "忠實的決議與待辦追蹤" },
@@ -155,6 +156,11 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     add(scores, ["gemini-pro"], 9);
     add(scores, ["claude-sonnet", "gpt-5-5"], 4);
     signals.push(locale === "zh-TW" ? "簡報需要視覺結構與素材理解" : "The presentation needs visual structure and source understanding");
+  } else if (input.taskKind === "poster") {
+    add(scores, ["gemini-pro"], 9);
+    add(scores, ["gemini-flash"], 5);
+    add(scores, ["gpt-5-5"], 3);
+    signals.push(locale === "zh-TW" ? "海報成品需要視覺理解與清楚層級" : "A poster artifact needs visual understanding and clear hierarchy");
   } else if (everydayTasks.includes(input.taskKind)) {
     add(scores, ["claude-sonnet"], 8);
     add(scores, ["gemini-flash", "gpt-5-5"], 3);
@@ -194,6 +200,13 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     add(scores, ["gemini-flash"], 4);
     add(scores, ["claude-sonnet"], 2);
     signals.push(locale === "zh-TW" ? "已開啟精簡模式，增加快速模型權重" : "Quick mode increases the weight of faster models");
+  }
+
+  if (input.deliveryMode === "artifact") {
+    signals.push(locale === "zh-TW" ? "已選擇直接建立成品" : "A finished artifact is required");
+  } else {
+    add(scores, ["claude-sonnet", "gemini-flash"], 2);
+    signals.push(locale === "zh-TW" ? "只需對話草稿，增加日常快速模型權重" : "Conversation-only delivery raises everyday fast models");
   }
 
   // Kang Chiao accounts have ample credits, so task fit and quality outrank cost.

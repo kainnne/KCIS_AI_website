@@ -108,6 +108,17 @@
       "enabled": "On",
       "disabled": "Off"
     },
+    "delivery": {
+      "eyebrow": "Delivery",
+      "title": "What should Kuse hand back?",
+      "artifactBadge": "Recommended",
+      "artifact": "Create the finished artifact",
+      "artifactHint": "Use Kuse's creation tools and save the result in the workspace—not just an outline in chat.",
+      "conversationBadge": "Discuss first",
+      "conversation": "Answer in the conversation",
+      "conversationHint": "Use this for brainstorming, comparing directions, or reviewing an outline before creating a file.",
+      "conversationResult": "an outline or draft in the conversation"
+    },
     "advanced": {
       "title": "More optional settings",
       "hint": "Style, format, tone, required items, and other limits"
@@ -170,6 +181,7 @@
       "task": "Task",
       "materials": "Materials",
       "output": "Output",
+      "delivery": "Delivery",
       "none": "Kuse will ask if material is needed"
     }
   },

@@ -8,6 +8,7 @@ export type KuseTaskKind =
   | "assessment"
   | "class_activity"
   | "presentation"
+  | "poster"
   | "website"
   | "notice"
   | "meeting_minutes"
@@ -31,12 +32,14 @@ export type KuseFormat =
   | "structured"
   | "table"
   | "slides"
+  | "poster"
   | "webpage"
   | "checklist"
   | "notice";
 export type KuseTone = "clear" | "friendly" | "formal" | "concise";
 export type KuseSiteScope = "mvp" | "complete";
 export type KuseExecutionMode = "quick" | "standard";
+export type KuseDeliveryMode = "artifact" | "conversation";
 export type KuseRequirement =
   | "learning_objectives"
   | "teaching_steps"
@@ -72,6 +75,7 @@ export type KusePromptInput = {
   mustIncludeContent: string;
   linksAndActions: string;
   executionMode: KuseExecutionMode;
+  deliveryMode: KuseDeliveryMode;
   outputLanguage: Locale;
 };
 
@@ -97,10 +101,30 @@ export const SOURCE_LABELS: LabelMap<KuseSource> = {
 export const FORMAT_LABELS: LabelMap<KuseFormat> = {
   structured: { en: "Structured sections", "zh-TW": "分段結構" },
   table: { en: "Table", "zh-TW": "表格" },
-  slides: { en: "Slide outline", "zh-TW": "簡報大綱" },
-  webpage: { en: "Webpage specification", "zh-TW": "網頁規格" },
+  slides: { en: "Presentation / slides", "zh-TW": "簡報／投影片" },
+  poster: { en: "Poster / visual", "zh-TW": "海報／視覺成品" },
+  webpage: { en: "Kuse Page / webpage", "zh-TW": "Kuse Page／網頁" },
   checklist: { en: "Checklist", "zh-TW": "檢核清單" },
   notice: { en: "Notice / message", "zh-TW": "公告／訊息格式" },
+};
+
+export const ARTIFACT_LABELS: LabelMap<KuseTaskKind> = {
+  teaching_material: { en: "an editable teaching-material document", "zh-TW": "可編輯的教材文件" },
+  lesson_plan: { en: "an editable lesson-plan document", "zh-TW": "可編輯的教案文件" },
+  worksheet: { en: "a printable, editable worksheet", "zh-TW": "可列印、可編輯的學習單" },
+  assessment: { en: "a complete, editable assessment file", "zh-TW": "完整可編輯的試卷檔案" },
+  class_activity: { en: "a ready-to-use activity guide", "zh-TW": "可直接使用的活動指引" },
+  presentation: { en: "a complete, editable presentation", "zh-TW": "完整可編輯的簡報成品" },
+  poster: { en: "a finished poster or the closest editable visual artifact", "zh-TW": "完整海報或最接近的可編輯視覺成品" },
+  website: { en: "a shareable Kuse Page", "zh-TW": "可分享的 Kuse Page 網站" },
+  notice: { en: "an editable notice document", "zh-TW": "可編輯的公告文件" },
+  meeting_minutes: { en: "an editable meeting-minutes document", "zh-TW": "可編輯的會議紀錄文件" },
+  event_plan: { en: "an editable event-plan document", "zh-TW": "可編輯的活動企劃文件" },
+  sop: { en: "an editable SOP document", "zh-TW": "可編輯的 SOP 文件" },
+  form: { en: "a complete, editable form artifact", "zh-TW": "完整可編輯的表單成品" },
+  report: { en: "an editable report document or report page", "zh-TW": "可編輯的報告文件或報告頁面" },
+  resource_guide: { en: "an editable resource guide", "zh-TW": "可編輯的資源指南" },
+  other: { en: "the closest complete, editable artifact for the task", "zh-TW": "最符合任務的完整可編輯成品" },
 };
 
 export const TONE_LABELS: LabelMap<KuseTone> = {
@@ -150,6 +174,10 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
         body: `${input.role === "teacher" ? "教學夥伴" : "行政夥伴"}・只做「${field(input.task, "這項任務")}」。`,
       },
       {
+        title: "交付",
+        body: input.deliveryMode === "artifact" ? `建立${ARTIFACT_LABELS[input.taskKind][locale]}，不只給大綱。` : "先在對話中回答，不建立檔案。",
+      },
+      {
         title: "材料",
         body: isNoMaterial ? "沒有資料也能先做；校內事實留待補。" : sources ? `優先使用：${sources}。` : "需要資料時，讓 Kuse 一次問完。",
       },
@@ -160,14 +188,14 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
     ];
 
     if (input.executionMode === "quick") {
-      notes.push({ title: "速度", body: "少問、少規劃，先交付可用初稿。" });
+      notes.push({ title: "速度", body: input.deliveryMode === "artifact" ? "少問、少規劃，先交付小而可用的成品。" : "少問、少規劃，先給可用草稿。" });
     }
     if (input.taskKind === "website") {
       notes.push({
         title: "網站",
-        body: input.siteScope === "mvp"
-          ? "一頁、4–6 區塊；完成後點 Publish now。"
-          : "先做核心頁面；完成後點 Publish now。",
+        body: input.deliveryMode === "artifact"
+          ? (input.siteScope === "mvp" ? "一頁、4–6 區塊；完成後點 Publish now。" : "先做核心頁面；完成後點 Publish now。")
+          : "先在對話中確認網站架構，不建立或發布頁面。",
       });
     }
     return notes;
@@ -179,6 +207,10 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
       body: `${input.role === "teacher" ? "Teaching partner" : "Operations partner"} · only “${field(input.task, "this task")}.”`,
     },
     {
+      title: "Delivery",
+      body: input.deliveryMode === "artifact" ? `Create ${ARTIFACT_LABELS[input.taskKind][locale]}, not just an outline.` : "Answer in the conversation first; do not create a file.",
+    },
+    {
       title: "Sources",
       body: isNoMaterial ? "Start without sources; leave school facts blank." : sources ? `Use first: ${sources}.` : "Let Kuse ask once if sources are needed.",
     },
@@ -186,14 +218,14 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
   ];
 
   if (input.executionMode === "quick") {
-    notes.push({ title: "Speed", body: "Ask less, plan less, deliver a usable draft first." });
+    notes.push({ title: "Speed", body: input.deliveryMode === "artifact" ? "Ask less, plan less, and deliver a small usable artifact first." : "Ask less, plan less, and give a usable draft first." });
   }
   if (input.taskKind === "website") {
     notes.push({
       title: "Website",
-      body: input.siteScope === "mvp"
-        ? "One page, 4–6 sections; then click Publish now."
-        : "Build core pages first; then click Publish now.",
+      body: input.deliveryMode === "artifact"
+        ? (input.siteScope === "mvp" ? "One page, 4–6 sections; then click Publish now." : "Build core pages first; then click Publish now.")
+        : "Confirm the site structure in conversation; do not create or publish a page yet.",
     });
   }
   return notes;
@@ -209,17 +241,23 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
   if (locale === "zh-TW") {
     const notes: PromptDesignNote[] = [
       {
-        title: "1. 先說 AI 是誰",
+        title: "先說 AI 是誰",
         body: input.role === "teacher"
           ? "我把 AI 設定成教學設計夥伴，讓它用老師真正能採用的方式整理內容。"
           : "我把 AI 設定成行政工作夥伴，讓它優先考慮清楚、可執行與方便交接。",
       },
       {
-        title: "2. 一次只做一件事",
+        title: "一次只做一件事",
         body: `這次只完成「${field(input.task, "這項任務")}」，避免 Kuse 自動延伸成不需要的簡報、報告或其他成品。`,
       },
       {
-        title: "3. 說清楚資料邊界",
+        title: "選擇交付方式",
+        body: input.deliveryMode === "artifact"
+          ? `你要求 Kuse 直接建立「${ARTIFACT_LABELS[input.taskKind][locale]}」。對話只需要簡短交代成果，不可以用大綱或製作建議代替成品。`
+          : "你選擇先在對話中回答，適合討論方向、比較方案或確認大綱；這一步不建立檔案，確認後再切換成品模式。",
+      },
+      {
+        title: "說清楚資料邊界",
         body: isNoMaterial
           ? "你選擇沒有資料，所以 Kuse 可以先做通用初稿；校內日期、數字、規定與連結必須留待補。"
           : sources
@@ -227,29 +265,29 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
             : "你沒有指定材料。若任務真的需要資料，Kuse 會集中問一次；不需要時就直接先做。",
       },
       {
-        title: "4. 設定怎樣才算完成",
+        title: "設定怎樣才算完成",
         body: `使用對象是「${field(input.audience, "尚未指定")}」，份量是「${field(input.amount, "交給 Kuse 建議")}」${format ? `，格式採「${format}」` : ""}${tone ? `，語氣採「${tone}」` : ""}${requirements ? `，並加入「${requirements}」` : ""}。這些都是驗收條件，不是漂亮但空泛的形容詞。`,
       },
     ];
 
     if (input.executionMode === "quick") {
       notes.push({
-        title: "5. 用精簡模式換速度",
-        body: "Kuse 最多集中問一次、一次不超過三題；它會略過長篇規劃，先交付最小可用初稿，再讓你決定要不要加深。",
+        title: "用精簡模式換速度",
+        body: input.deliveryMode === "artifact" ? "Kuse 最多集中問一次、一次不超過三題；它會略過長篇規劃，先交付最小可用成品，再讓你決定要不要加深。" : "Kuse 最多集中問一次、一次不超過三題；它會略過長篇規劃，先給可用草稿。",
       });
     }
 
     if (input.taskKind === "website") {
       notes.push({
-        title: `${notes.length + 1}. 網站要能真的分享`,
-        body: input.siteScope === "mvp"
-          ? "網站先限制成一頁、4–6 個必要區塊與一個主要行動。完成後使用 Kuse Page 的 Publish now 取得網址，不下載獨立 HTML。"
-          : "網站先完成核心頁面再擴充。完成後使用 Kuse Page 的 Publish now 取得網址，不下載獨立 HTML。",
+        title: input.deliveryMode === "artifact" ? "網站要能真的分享" : "網站先確認方向",
+        body: input.deliveryMode === "artifact"
+          ? (input.siteScope === "mvp" ? "網站先限制成一頁、4–6 個必要區塊與一個主要行動。完成後使用 Kuse Page 的 Publish now 取得網址，不下載獨立 HTML。" : "網站先完成核心頁面再擴充。完成後使用 Kuse Page 的 Publish now 取得網址，不下載獨立 HTML。")
+          : "這一步只在對話中確認網站架構、區塊與內容草稿，不建立或發布 Kuse Page。",
       });
     }
 
     notes.push({
-      title: `${notes.length + 1}. 最後仍要由人判斷`,
+      title: "最後仍要由人判斷",
       body: "AI 可以加快初稿，但日期、規定、引用、適齡性與敏感資料仍要由同仁確認；沒有依據的內容應標示待查證。",
     });
     return notes;
@@ -257,17 +295,23 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
 
   const notes: PromptDesignNote[] = [
     {
-      title: "1. Give AI a role",
+      title: "Give AI a role",
       body: input.role === "teacher"
         ? "AI is a teaching-design partner, so it should organize work in a form teachers can actually use."
         : "AI is an operations partner, so it should prioritize clarity, action, and handoff.",
     },
     {
-      title: "2. Keep it to one task",
+      title: "Keep it to one task",
       body: `Kuse should complete only “${field(input.task, "this task")}” instead of expanding into slides, reports, or other unrequested deliverables.`,
     },
     {
-      title: "3. Set a source boundary",
+      title: "Choose how Kuse should deliver",
+      body: input.deliveryMode === "artifact"
+        ? `Kuse must create ${ARTIFACT_LABELS[input.taskKind][locale]}. The chat reply may summarize the result, but an outline or production advice cannot replace the artifact.`
+        : "You chose a conversation response for discussing direction, comparing options, or reviewing an outline. No file is created until you switch to artifact mode.",
+    },
+    {
+      title: "Set a source boundary",
       body: isNoMaterial
         ? "You have no source material, so Kuse can draft generally but must leave school-specific dates, figures, policy, and links as placeholders."
         : sources
@@ -275,29 +319,29 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
           : "No source is selected. Kuse can ask once if the task truly needs one; otherwise it should start.",
     },
     {
-      title: "4. Define what done looks like",
+      title: "Define what done looks like",
       body: `Audience: “${field(input.audience, "not specified")}.” Scope: “${field(input.amount, "let Kuse suggest it")}.”${format ? ` Format: “${format}.”` : ""}${tone ? ` Tone: “${tone}.”` : ""}${requirements ? ` Include: “${requirements}.”` : ""} These are practical review criteria.`,
     },
   ];
 
   if (input.executionMode === "quick") {
     notes.push({
-      title: "5. Trade depth for speed when appropriate",
-      body: "Kuse asks only one consolidated set of up to three questions, skips a long planning speech, and delivers the smallest usable draft first.",
+      title: "Trade depth for speed when appropriate",
+      body: input.deliveryMode === "artifact" ? "Kuse asks only one consolidated set of up to three questions, skips a long planning speech, and delivers the smallest usable artifact first." : "Kuse asks only one consolidated set of up to three questions, skips a long planning speech, and gives a usable draft first.",
     });
   }
 
   if (input.taskKind === "website") {
     notes.push({
-      title: `${notes.length + 1}. Make the website genuinely shareable`,
-      body: input.siteScope === "mvp"
-        ? "Keep it to one page, 4–6 essential sections, and one primary action. Use Publish now for a Kuse Page URL instead of downloading standalone HTML."
-        : "Build the core pages first, then expand. Use Publish now for a Kuse Page URL instead of downloading standalone HTML.",
+      title: input.deliveryMode === "artifact" ? "Make the website genuinely shareable" : "Confirm the website direction first",
+      body: input.deliveryMode === "artifact"
+        ? (input.siteScope === "mvp" ? "Keep it to one page, 4–6 essential sections, and one primary action. Use Publish now for a Kuse Page URL instead of downloading standalone HTML." : "Build the core pages first, then expand. Use Publish now for a Kuse Page URL instead of downloading standalone HTML.")
+        : "Use the conversation to confirm the site structure, sections, and content draft. Do not create or publish a Kuse Page in this step.",
     });
   }
 
   notes.push({
-    title: `${notes.length + 1}. Keep a human in the loop`,
+    title: "Keep a human in the loop",
     body: "AI speeds up the draft, but staff still verify dates, policy, citations, age suitability, and sensitive information. Unsupported content should be marked for review.",
   });
   return notes;
@@ -312,13 +356,16 @@ export function buildKusePrompt(input: KusePromptInput): string {
   const isWebsite = input.taskKind === "website";
   const isMvpWebsite = isWebsite && input.siteScope === "mvp";
   const isNoMaterial = input.sources.includes("no_material");
+  const isArtifact = input.deliveryMode === "artifact";
+  const artifact = ARTIFACT_LABELS[input.taskKind][locale];
   const zhTaskRule: Record<KuseTaskKind, string> = {
     teaching_material: "教材內容需對齊指定材料、使用對象與學習目標，並提供可直接使用的清楚結構。",
     lesson_plan: "教案需對齊學習目標，清楚列出教學流程、所需材料與可檢查的學習成果。",
     worksheet: "學習單需對齊指定材料與學段，題目指示清楚，並保留可直接列印或編輯的結構。",
     assessment: "試卷需對齊指定範圍與學習目標，題意明確、難度可檢查，並分開提供答案與解析。",
     class_activity: "課堂活動需列出目標、時間、材料、教師步驟、學生任務與完成判準。",
-    presentation: "簡報先提出敘事架構與逐頁大綱；每頁只處理一個重點，避免大段文字與沒有依據的數據。",
+    presentation: "簡報需有清楚敘事與逐頁結構；每頁只處理一個重點，避免大段文字與沒有依據的數據。選擇成品模式時直接建立完整投影片，不要停在逐頁大綱。",
+    poster: "海報需有單一溝通目標、清楚視覺層級與可快速閱讀的重點。選擇成品模式時直接建立海報或最接近的可編輯視覺成品，不要只提供文案或版面建議。",
     website: "網站需服務明確使用者、解決一項真實問題，並讓使用者知道下一步行動。",
     notice: "公告需先整理對象、目的、時間、地點、必要行動與承辦窗口；缺少資訊時保留待確認欄位。",
     meeting_minutes: "會議紀錄需區分討論重點、決議、待辦、負責人與期限；沒有明確說出的決議不得自行補寫。",
@@ -335,7 +382,8 @@ export function buildKusePrompt(input: KusePromptInput): string {
     worksheet: "Align the worksheet with the supplied source and learning stage. Keep directions unambiguous and the layout ready to print or edit.",
     assessment: "Align the assessment with the stated scope and objectives. Use unambiguous questions, checkable difficulty, and a separate answer key with explanations.",
     class_activity: "List the objective, timing, materials, teacher steps, student actions, and completion criteria.",
-    presentation: "Propose the narrative and slide-by-slide outline first. Give each slide one purpose; avoid dense copy and unsupported data.",
+    presentation: "Use a clear narrative and slide-by-slide structure. Give each slide one purpose; avoid dense copy and unsupported data. In artifact mode, create the complete presentation instead of stopping at an outline.",
+    poster: "Give the poster one communication goal, clear visual hierarchy, and scannable key points. In artifact mode, create the poster or closest editable visual artifact instead of returning only copy or layout advice.",
     website: "Serve a clearly defined user, solve one real problem, and make the user's next action explicit.",
     notice: "Organize the audience, purpose, time, location, required action, and contact. Leave explicit placeholders for missing facts.",
     meeting_minutes: "Separate discussion, decisions, action items, owners, and deadlines. Never invent a decision that was not stated.",
@@ -373,6 +421,11 @@ export function buildKusePrompt(input: KusePromptInput): string {
       requirements ? `必須包含：${requirements}。` : "",
       input.extraConstraints.trim() ? `其他限制：${input.extraConstraints.trim()}` : "",
       "輸出語言：繁體中文。",
+      "【交付方式】",
+      isArtifact ? "直接建立成品。" : "先在對話中回答。",
+      isArtifact ? `目標成品：${artifact}。` : "請在目前對話中提供清楚的大綱、草稿或建議，不建立檔案、頁面或其他成品。",
+      isArtifact ? "請使用 Kuse 內建的內容／檔案建立能力，把成品存入工作區並開啟讓我檢查。不要只回覆大綱、示例文案、製作步驟或「你可以如何製作」。" : "完成對話回答後，只問我是否要把這個版本轉成正式成品。",
+      isArtifact ? "若 Kuse 沒有完全對應的原生格式，請建立最接近且可編輯的成品，並用一句話說明格式差異；不要自行退回成純文字大綱。" : "",
       isWebsite ? "【網站需求】" : "",
       isWebsite ? `交付模式：${isMvpWebsite ? "快速 MVP（一頁式、先小後大）" : "完整版本（較完整的資訊架構與內容）"}` : "",
       isWebsite ? `要解決的問題：${field(input.problemToSolve, "未指定；請先詢問")}` : "",
@@ -390,11 +443,12 @@ export function buildKusePrompt(input: KusePromptInput): string {
       "4. 先產出可直接使用的完整初稿，再列出需要人工確認的項目。",
       "5. 不使用真實學生姓名、成績、輔導、健康、人事或其他敏感資料。",
       "6. 正確性、適齡性、法規、日期與引用內容若無法從材料確認，明確標示「待人工查證」。",
-      isWebsite ? "7. 請使用 Kuse 的 Web Page／AI Pages 能力建立網站成品，不要只回傳下載用或無法分享的獨立 HTML 檔案，也不要改做成簡報。" : "",
-      isWebsite ? "8. 先用極短架構確認區塊後直接製作；最多一次集中詢問必要缺漏，能用清楚的待補欄位處理時就繼續，不要反覆來回規劃。" : "",
-      isWebsite ? (isMvpWebsite ? "9. MVP 限制為一頁式、4–6 個必要區塊、單一主要行動。先完成可用的小版本，不增加登入、資料庫、後台或未要求的複雜功能。" : "9. 完整版本仍要先交付可用的核心頁面，再逐步補上次要頁面與功能；避免一次擴張成難以完成的系統。") : "",
-      isWebsite ? "10. 優先確保手機閱讀、資訊層級、按鈕文字與實際用途；避免冗長文字、無功能按鈕與不必要動畫。" : "",
-      isWebsite ? "11. 網站完成後使用 Kuse 內建發布流程。若畫面出現「Publish now」且必須由我操作，請只明確提醒我點擊一次；發布完成後回傳可分享的公開 URL。不要要求我下載 HTML 或到其他平台部署。" : "",
+      isWebsite && isArtifact ? "7. 請使用 Kuse 的 Web Page／AI Pages 能力建立網站成品，不要只回傳下載用或無法分享的獨立 HTML 檔案，也不要改做成簡報。" : "",
+      isWebsite && !isArtifact ? "7. 只在對話中提供網站架構、區塊與內容草稿；這一步不要建立或發布 Kuse Page。" : "",
+      isWebsite && isArtifact ? "8. 先用極短架構確認區塊後直接製作；最多一次集中詢問必要缺漏，能用清楚的待補欄位處理時就繼續，不要反覆來回規劃。" : "",
+      isWebsite ? (isMvpWebsite ? `${isArtifact ? "9" : "8"}. MVP 限制為一頁式、4–6 個必要區塊、單一主要行動。先完成可用的小版本，不增加登入、資料庫、後台或未要求的複雜功能。` : `${isArtifact ? "9" : "8"}. 完整版本仍要先交付可用的核心頁面，再逐步補上次要頁面與功能；避免一次擴張成難以完成的系統。`) : "",
+      isWebsite ? `${isArtifact ? "10" : "9"}. 優先確保手機閱讀、資訊層級、按鈕文字與實際用途；避免冗長文字、無功能按鈕與不必要動畫。` : "",
+      isWebsite && isArtifact ? "11. 網站完成後使用 Kuse 內建發布流程。若畫面出現「Publish now」且必須由我操作，請只明確提醒我點擊一次；發布完成後回傳可分享的公開 URL。不要要求我下載 HTML 或到其他平台部署。" : "",
     ].join("\n").replace(/\n{3,}/g, "\n\n").trim();
   }
 
@@ -423,6 +477,11 @@ export function buildKusePrompt(input: KusePromptInput): string {
     requirements ? `Must include: ${requirements}.` : "",
     input.extraConstraints.trim() ? `Other constraints: ${input.extraConstraints.trim()}` : "",
     "Output language: English.",
+    "[DELIVERY MODE]",
+    isArtifact ? "Create the artifact now." : "Answer in the conversation first.",
+    isArtifact ? `Target artifact: ${artifact}.` : "Provide a clear outline, draft, or recommendation in this conversation. Do not create a file, page, or other artifact yet.",
+    isArtifact ? "Use Kuse's built-in content and file-creation capabilities, save the artifact in the workspace, and open it for review. Do not return only an outline, sample copy, production steps, or advice about how I could make it." : "After the conversation response, ask only whether I want to turn this version into a finished artifact.",
+    isArtifact ? "If Kuse does not support the exact native format, create the closest editable artifact and explain the format difference in one sentence. Do not silently fall back to a text outline." : "",
     isWebsite ? "[WEBSITE REQUIREMENTS]" : "",
     isWebsite ? `Delivery mode: ${isMvpWebsite ? "Quick MVP (one page, start small)" : "Complete version (broader information architecture and content)"}` : "",
     isWebsite ? `Problem to solve: ${field(input.problemToSolve, "Not specified — ask me first")}` : "",
@@ -440,10 +499,11 @@ export function buildKusePrompt(input: KusePromptInput): string {
     "4. Produce a complete, usable first draft, followed by a short list of items that need human review.",
     "5. Do not use real student names, grades, counseling, health, HR, or other sensitive data.",
     "6. Mark accuracy, age suitability, policy, dates, and citations as 'verify manually' whenever the supplied material cannot confirm them.",
-    isWebsite ? "7. Use Kuse's Web Page / AI Pages capability to create the website deliverable. Do not return only a downloadable or unshareable standalone HTML file, and do not turn the task into a slide deck." : "",
-    isWebsite ? "8. Confirm the section plan briefly, then build. Ask at most one consolidated set of essential questions; continue with clearly labeled placeholders when possible instead of prolonging planning." : "",
-    isWebsite ? (isMvpWebsite ? "9. Keep the MVP to one page, 4–6 essential sections, and one primary action. Finish a small usable version first; do not add authentication, databases, admin panels, or unrequested complex features." : "9. For the complete version, deliver the usable core pages first and add secondary pages or features in stages. Do not expand it into an unnecessarily large system.") : "",
-    isWebsite ? "10. Prioritize mobile reading, information hierarchy, explicit button labels, and working actions. Avoid long copy, non-functional buttons, and unnecessary animation." : "",
-    isWebsite ? "11. When the site is ready, use Kuse's built-in publishing flow. If a 'Publish now' button appears and requires my action, tell me clearly to click it once. After publishing, return the public share URL. Do not ask me to download HTML or deploy it on another platform." : "",
+    isWebsite && isArtifact ? "7. Use Kuse's Web Page / AI Pages capability to create the website deliverable. Do not return only a downloadable or unshareable standalone HTML file, and do not turn the task into a slide deck." : "",
+    isWebsite && !isArtifact ? "7. Provide the site structure, sections, and content draft only in the conversation. Do not create or publish a Kuse Page in this step." : "",
+    isWebsite && isArtifact ? "8. Confirm the section plan briefly, then build. Ask at most one consolidated set of essential questions; continue with clearly labeled placeholders when possible instead of prolonging planning." : "",
+    isWebsite ? (isMvpWebsite ? `${isArtifact ? "9" : "8"}. Keep the MVP to one page, 4–6 essential sections, and one primary action. Finish a small usable version first; do not add authentication, databases, admin panels, or unrequested complex features.` : `${isArtifact ? "9" : "8"}. For the complete version, deliver the usable core pages first and add secondary pages or features in stages. Do not expand it into an unnecessarily large system.`) : "",
+    isWebsite ? `${isArtifact ? "10" : "9"}. Prioritize mobile reading, information hierarchy, explicit button labels, and working actions. Avoid long copy, non-functional buttons, and unnecessary animation.` : "",
+    isWebsite && isArtifact ? "11. When the site is ready, use Kuse's built-in publishing flow. If a 'Publish now' button appears and requires my action, tell me clearly to click it once. After publishing, return the public share URL. Do not ask me to download HTML or deploy it on another platform." : "",
   ].join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }

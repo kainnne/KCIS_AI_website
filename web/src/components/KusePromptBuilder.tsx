@@ -7,6 +7,7 @@ import {
   buildKusePrompt,
   buildDetailedPromptDesignNotes,
   buildPromptDesignNotes,
+  ARTIFACT_LABELS,
   FORMAT_LABELS,
   REQUIREMENT_LABELS,
   SOURCE_LABELS,
@@ -35,6 +36,7 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
     { id: "assessment", label: { en: "Assessment or exam", "zh-TW": "試卷／測驗設計" } },
     { id: "class_activity", label: { en: "Classroom activity", "zh-TW": "課堂活動" } },
     { id: "presentation", label: { en: "Presentation", "zh-TW": "簡報" } },
+    { id: "poster", label: { en: "Poster", "zh-TW": "海報" } },
     { id: "website", label: { en: "Practical website", "zh-TW": "實用網站" } },
     { id: "other", label: { en: "Another task", "zh-TW": "其他任務" } },
   ],
@@ -43,6 +45,7 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
     { id: "meeting_minutes", label: { en: "Meeting minutes", "zh-TW": "會議紀錄" } },
     { id: "event_plan", label: { en: "Event plan", "zh-TW": "活動規劃" } },
     { id: "presentation", label: { en: "Presentation", "zh-TW": "簡報" } },
+    { id: "poster", label: { en: "Poster", "zh-TW": "海報" } },
     { id: "website", label: { en: "Practical website", "zh-TW": "實用網站" } },
     { id: "sop", label: { en: "Workflow or SOP", "zh-TW": "流程／SOP" } },
     { id: "form", label: { en: "Form questions", "zh-TW": "表單題目" } },
@@ -69,7 +72,7 @@ function requirementOptions(role: KuseRole, taskKind: KuseTaskKind): KuseRequire
   if (taskKind === "assessment") {
     return ["learning_objectives", "answer_key", "differentiation", "source_alignment", "privacy_check"];
   }
-  if (taskKind === "presentation") {
+  if (taskKind === "presentation" || taskKind === "poster") {
     return role === "teacher"
       ? ["learning_objectives", "speaker_notes", "source_alignment", "privacy_check"]
       : ["speaker_notes", "source_notes", "review_markers", "privacy_check"];
@@ -77,10 +80,11 @@ function requirementOptions(role: KuseRole, taskKind: KuseTaskKind): KuseRequire
   return ROLE_REQUIREMENTS[role];
 }
 
-const FORMATS: KuseFormat[] = ["structured", "table", "slides", "webpage", "checklist", "notice"];
+const FORMATS: KuseFormat[] = ["structured", "table", "slides", "poster", "webpage", "checklist", "notice"];
 const TONES: KuseTone[] = ["clear", "friendly", "formal", "concise"];
 const DEFAULT_FORMAT_BY_TASK: Partial<Record<KuseTaskKind, KuseFormat>> = {
   presentation: "slides",
+  poster: "poster",
   website: "webpage",
   notice: "notice",
   meeting_minutes: "table",
@@ -120,6 +124,10 @@ const TASK_HINTS: Record<KuseTaskKind, Record<Locale, TaskHints>> = {
   presentation: {
     en: { task: "e.g. Create a parent briefing presentation", materials: "e.g. Use the event brief and schedule", audience: "e.g. Parents", amount: "e.g. 8 slides", extra: "e.g. One idea per slide" },
     "zh-TW": { task: "例如：製作家長說明會簡報", materials: "例如：使用活動企劃與行程表", audience: "例如：家長", amount: "例如：8 頁", extra: "例如：每頁只放一個重點" },
+  },
+  poster: {
+    en: { task: "e.g. Create a campus reading-week poster", materials: "e.g. Use the approved event details and school logo", audience: "e.g. Students and parents", amount: "e.g. One A3 poster", extra: "e.g. Make the date and sign-up action easy to spot" },
+    "zh-TW": { task: "例如：製作校園閱讀週活動海報", materials: "例如：使用已核定活動資訊與校徽", audience: "例如：學生與家長", amount: "例如：一張 A3 海報", extra: "例如：日期與報名行動要一眼看見" },
   },
   website: {
     en: { task: "e.g. Make a field-trip information site for parents", materials: "e.g. Use the itinerary and response-form link", audience: "e.g. Parents reading on phones", amount: "e.g. One page, 4–6 sections", extra: "e.g. No login or database" },
@@ -179,6 +187,7 @@ function initialInput(locale: Locale): KusePromptInput {
     mustIncludeContent: "",
     linksAndActions: "",
     executionMode: "quick",
+    deliveryMode: "artifact",
     outputLanguage: locale,
   };
 }
@@ -280,6 +289,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
       format: DEFAULT_FORMAT_BY_TASK[taskKind] ?? null,
       requirements: isWebsite ? ["shareable_page", "mobile_first", "working_actions"] : [],
       siteScope: "mvp",
+      deliveryMode: "artifact",
     }));
   }
 
@@ -392,6 +402,37 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
 
         {step === "specs" ? (
           <StepPanel key="kuse-specs" title={t.kuseBuilder.specs.title} subtitle={t.kuseBuilder.specs.subtitle}>
+            <section className="kc-delivery-mode" aria-labelledby="kuse-delivery-title">
+              <div>
+                <p className="kc-builder-section-label">{t.kuseBuilder.delivery.eyebrow}</p>
+                <h3 id="kuse-delivery-title">{t.kuseBuilder.delivery.title}</h3>
+              </div>
+              <div className="kc-delivery-grid">
+                <button
+                  type="button"
+                  className={input.deliveryMode === "artifact" ? "is-active" : ""}
+                  aria-pressed={input.deliveryMode === "artifact"}
+                  onClick={() => setInput((current) => ({ ...current, deliveryMode: "artifact" }))}
+                >
+                  <span>{t.kuseBuilder.delivery.artifactBadge}</span>
+                  <strong>{t.kuseBuilder.delivery.artifact}</strong>
+                  <small>{t.kuseBuilder.delivery.artifactHint}</small>
+                  <em>{ARTIFACT_LABELS[input.taskKind][locale]}</em>
+                </button>
+                <button
+                  type="button"
+                  className={input.deliveryMode === "conversation" ? "is-active" : ""}
+                  aria-pressed={input.deliveryMode === "conversation"}
+                  onClick={() => setInput((current) => ({ ...current, deliveryMode: "conversation" }))}
+                >
+                  <span>{t.kuseBuilder.delivery.conversationBadge}</span>
+                  <strong>{t.kuseBuilder.delivery.conversation}</strong>
+                  <small>{t.kuseBuilder.delivery.conversationHint}</small>
+                  <em>{t.kuseBuilder.delivery.conversationResult}</em>
+                </button>
+              </div>
+            </section>
+
             <button
               type="button"
               className={`kc-quick-mode ${input.executionMode === "quick" ? "is-active" : ""}`}
@@ -607,6 +648,10 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 value={input.sources.length ? input.sources.map((source) => SOURCE_LABELS[source][locale]).join(" · ") : t.kuseBuilder.summary.none}
               />
               <SummaryItem label={t.kuseBuilder.summary.output} value={input.outputLanguage === "en" ? "English" : "繁體中文"} />
+              <SummaryItem
+                label={t.kuseBuilder.summary.delivery}
+                value={input.deliveryMode === "artifact" ? ARTIFACT_LABELS[input.taskKind][locale] : t.kuseBuilder.delivery.conversationResult}
+              />
             </div>
 
             <section className="kc-model-guide" aria-labelledby="kuse-model-guide-title">

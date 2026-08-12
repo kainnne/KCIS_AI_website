@@ -1035,6 +1035,91 @@ input:focus-visible {
   gap: 1rem;
 }
 
+.kc-delivery-mode {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(107, 61, 154, 0.14);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(280px 140px at 100% 0%, rgba(246, 125, 176, 0.1), transparent 72%),
+    rgba(255, 255, 255, 0.66);
+}
+
+.kc-delivery-mode h3 {
+  margin-top: 0.35rem;
+  color: var(--kc-blue-deep);
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.kc-delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.kc-delivery-grid button {
+  display: grid;
+  min-height: 11rem;
+  align-content: start;
+  gap: 0.42rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(27, 79, 156, 0.1);
+  border-radius: 1.1rem;
+  color: var(--kc-blue-deep);
+  background: rgba(255, 255, 255, 0.8);
+  text-align: left;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.kc-delivery-grid button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(107, 61, 154, 0.26);
+}
+
+.kc-delivery-grid button.is-active {
+  border-color: rgba(107, 61, 154, 0.38);
+  background: linear-gradient(145deg, #fff, rgba(239, 233, 249, 0.88));
+  box-shadow: 0 0 0 3px rgba(107, 61, 154, 0.07), 0 13px 28px rgba(29, 42, 93, 0.09);
+}
+
+.kc-delivery-grid button > span {
+  width: fit-content;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  color: var(--kc-purple);
+  background: rgba(107, 61, 154, 0.08);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.kc-delivery-grid button > strong {
+  margin-top: 0.15rem;
+  font-size: 0.92rem;
+}
+
+.kc-delivery-grid button > small {
+  color: var(--kc-text-soft);
+  font-size: 0.69rem;
+  line-height: 1.48;
+}
+
+.kc-delivery-grid button > em {
+  width: fit-content;
+  margin-top: 0.2rem;
+  padding: 0.3rem 0.52rem;
+  border-radius: 0.55rem;
+  color: #285b73;
+  background: rgba(92, 184, 178, 0.1);
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
 .kc-quick-mode {
   display: grid;
   width: 100%;
@@ -1257,7 +1342,7 @@ input:focus-visible {
 
 .kc-builder-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: 0.7rem;
   margin-top: 1.8rem;
 }
@@ -1830,6 +1915,7 @@ input:focus-visible {
 
   .kc-spec-grid,
   .kc-builder-summary,
+  .kc-delivery-grid,
   .kc-site-scope-grid,
   .kc-model-grid,
   .kc-learning-body ol {
