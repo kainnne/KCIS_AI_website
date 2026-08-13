@@ -37,6 +37,8 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
     { id: "class_activity", label: { en: "Classroom activity", "zh-TW": "課堂活動" } },
     { id: "presentation", label: { en: "Presentation", "zh-TW": "簡報" } },
     { id: "poster", label: { en: "Poster", "zh-TW": "海報" } },
+    { id: "image", label: { en: "Image", "zh-TW": "圖片" } },
+    { id: "research", label: { en: "Research", "zh-TW": "研究" } },
     { id: "website", label: { en: "Practical website", "zh-TW": "實用網站" } },
     { id: "other", label: { en: "Another task", "zh-TW": "其他任務" } },
   ],
@@ -46,6 +48,8 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
     { id: "event_plan", label: { en: "Event plan", "zh-TW": "活動規劃" } },
     { id: "presentation", label: { en: "Presentation", "zh-TW": "簡報" } },
     { id: "poster", label: { en: "Poster", "zh-TW": "海報" } },
+    { id: "image", label: { en: "Image", "zh-TW": "圖片" } },
+    { id: "research", label: { en: "Research", "zh-TW": "研究" } },
     { id: "website", label: { en: "Practical website", "zh-TW": "實用網站" } },
     { id: "sop", label: { en: "Workflow or SOP", "zh-TW": "流程／SOP" } },
     { id: "form", label: { en: "Form questions", "zh-TW": "表單題目" } },
@@ -60,6 +64,18 @@ const ROLE_SOURCES: Record<KuseRole, KuseSource[]> = {
   admin: ["no_material", "transcript", "official_document", "spreadsheet", "existing_template", "own_notes"],
 };
 
+function sourceOptions(role: KuseRole, taskKind: KuseTaskKind): KuseSource[] {
+  if (taskKind === "image" || taskKind === "poster") {
+    return role === "teacher"
+      ? ["reference_image", "kuse_textbook", "own_notes", "no_material"]
+      : ["reference_image", "official_document", "existing_template", "own_notes", "no_material"];
+  }
+  if (taskKind === "research") {
+    return ["web_sources", "uploaded_pdf", "official_document", "spreadsheet", "own_notes", "no_material"];
+  }
+  return ROLE_SOURCES[role];
+}
+
 const ROLE_REQUIREMENTS: Record<KuseRole, KuseRequirement[]> = {
   teacher: ["learning_objectives", "teaching_steps", "answer_key", "differentiation", "source_alignment"],
   admin: ["action_items", "owners_deadlines", "review_markers", "source_notes", "privacy_check"],
@@ -72,19 +88,27 @@ function requirementOptions(role: KuseRole, taskKind: KuseTaskKind): KuseRequire
   if (taskKind === "assessment") {
     return ["learning_objectives", "answer_key", "differentiation", "source_alignment", "privacy_check"];
   }
-  if (taskKind === "presentation" || taskKind === "poster") {
+  if (taskKind === "presentation") {
     return role === "teacher"
       ? ["learning_objectives", "speaker_notes", "source_alignment", "privacy_check"]
       : ["speaker_notes", "source_notes", "review_markers", "privacy_check"];
   }
+  if (taskKind === "image" || taskKind === "poster") {
+    return ["visual_hierarchy", "accurate_text", "source_alignment", "privacy_check"];
+  }
+  if (taskKind === "research") {
+    return ["citations", "key_takeaways", "evidence_gaps", "source_notes", "privacy_check"];
+  }
   return ROLE_REQUIREMENTS[role];
 }
 
-const FORMATS: KuseFormat[] = ["structured", "table", "slides", "poster", "webpage", "checklist", "notice"];
+const FORMATS: KuseFormat[] = ["structured", "table", "slides", "poster", "image", "webpage", "checklist", "notice"];
 const TONES: KuseTone[] = ["clear", "friendly", "formal", "concise"];
 const DEFAULT_FORMAT_BY_TASK: Partial<Record<KuseTaskKind, KuseFormat>> = {
   presentation: "slides",
   poster: "poster",
+  image: "image",
+  research: "structured",
   website: "webpage",
   notice: "notice",
   meeting_minutes: "table",
@@ -128,6 +152,14 @@ const TASK_HINTS: Record<KuseTaskKind, Record<Locale, TaskHints>> = {
   poster: {
     en: { task: "e.g. Create a campus reading-week poster", materials: "e.g. Use the approved event details and school logo", audience: "e.g. Students and parents", amount: "e.g. One A3 poster", extra: "e.g. Make the date and sign-up action easy to spot" },
     "zh-TW": { task: "例如：製作校園閱讀週活動海報", materials: "例如：使用已核定活動資訊與校徽", audience: "例如：學生與家長", amount: "例如：一張 A3 海報", extra: "例如：日期與報名行動要一眼看見" },
+  },
+  image: {
+    en: { task: "e.g. Generate a warm illustration of students reading under a tree", materials: "e.g. Use the attached campus photo only as a visual reference", audience: "e.g. Middle-school students", amount: "e.g. One 16:9 image", extra: "e.g. No logo, no text, no identifiable real student" },
+    "zh-TW": { task: "例如：生成學生在樹下閱讀的溫暖插畫", materials: "例如：只把附件校園照片當作視覺參考", audience: "例如：國中學生", amount: "例如：一張 16:9 圖片", extra: "例如：不放校徽、不加文字、不出現可辨識真實學生" },
+  },
+  research: {
+    en: { task: "e.g. Research practical AI uses for middle-school science teaching", materials: "e.g. Use recent public sources and the attached course proposal", audience: "e.g. Science department teachers", amount: "e.g. A two-page brief with 5 key findings", extra: "e.g. Prioritize sources from the last 2 years and cite every key claim" },
+    "zh-TW": { task: "例如：研究 AI 在國中自然科教學中的實用做法", materials: "例如：使用近期公開來源與附件課程企劃", audience: "例如：自然科教師", amount: "例如：兩頁摘要、5 項關鍵發現", extra: "例如：優先使用近兩年資料，每項重要結論附來源" },
   },
   website: {
     en: { task: "e.g. Make a field-trip information site for parents", materials: "e.g. Use the itinerary and response-form link", audience: "e.g. Parents reading on phones", amount: "e.g. One page, 4–6 sections", extra: "e.g. No login or database" },
@@ -285,11 +317,24 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
       ...current,
       taskKind,
       task: "",
+      sources: [],
+      materialDetails: "",
       amount: isWebsite ? (locale === "zh-TW" ? "一頁式，4–6 個必要區塊" : "One page with 4–6 essential sections") : "",
       format: DEFAULT_FORMAT_BY_TASK[taskKind] ?? null,
-      requirements: isWebsite ? ["shareable_page", "mobile_first", "working_actions"] : [],
+      requirements: isWebsite
+        ? ["shareable_page", "mobile_first", "working_actions"]
+        : taskKind === "research"
+          ? ["citations", "key_takeaways", "evidence_gaps"]
+          : taskKind === "image" || taskKind === "poster"
+            ? ["visual_hierarchy"]
+            : [],
       siteScope: "mvp",
       deliveryMode: "artifact",
+      problemToSolve: "",
+      primaryAction: "",
+      visualStyle: "",
+      mustIncludeContent: "",
+      linksAndActions: "",
     }));
   }
 
@@ -367,7 +412,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
         {step === "materials" ? (
           <StepPanel key="kuse-materials" title={t.kuseBuilder.materials.title} subtitle={t.kuseBuilder.materials.subtitle}>
             <div className="flex flex-wrap gap-2">
-              {ROLE_SOURCES[input.role].map((source) => (
+              {sourceOptions(input.role, input.taskKind).map((source) => (
                 <button
                   type="button"
                   key={source}
@@ -524,32 +569,34 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 <span aria-hidden>⌄</span>
               </summary>
               <div className="kc-advanced-body">
-                {input.taskKind === "website" ? (
+                {["website", "image", "poster"].includes(input.taskKind) ? (
                   <>
                     <BuilderInput
                       id="kuse-style"
-                      label={t.kuseBuilder.website.style}
+                      label={input.taskKind === "website" ? t.kuseBuilder.website.style : t.kuseBuilder.visual.style}
                       value={input.visualStyle}
                       onChange={(visualStyle) => setInput((current) => ({ ...current, visualStyle }))}
-                      placeholder={t.kuseBuilder.website.stylePlaceholder}
+                      placeholder={input.taskKind === "website" ? t.kuseBuilder.website.stylePlaceholder : t.kuseBuilder.visual.stylePlaceholder}
                     />
-                    <div className="kc-spec-grid">
+                    <div className={input.taskKind === "website" ? "kc-spec-grid" : ""}>
                       <BuilderTextarea
                         id="kuse-content"
-                        label={t.kuseBuilder.website.content}
+                        label={input.taskKind === "website" ? t.kuseBuilder.website.content : t.kuseBuilder.visual.content}
                         value={input.mustIncludeContent}
                         onChange={(mustIncludeContent) => setInput((current) => ({ ...current, mustIncludeContent }))}
-                        placeholder={t.kuseBuilder.website.contentPlaceholder}
+                        placeholder={input.taskKind === "website" ? t.kuseBuilder.website.contentPlaceholder : t.kuseBuilder.visual.contentPlaceholder}
                         compact
                       />
-                      <BuilderTextarea
-                        id="kuse-links"
-                        label={t.kuseBuilder.website.links}
-                        value={input.linksAndActions}
-                        onChange={(linksAndActions) => setInput((current) => ({ ...current, linksAndActions }))}
-                        placeholder={t.kuseBuilder.website.linksPlaceholder}
-                        compact
-                      />
+                      {input.taskKind === "website" ? (
+                        <BuilderTextarea
+                          id="kuse-links"
+                          label={t.kuseBuilder.website.links}
+                          value={input.linksAndActions}
+                          onChange={(linksAndActions) => setInput((current) => ({ ...current, linksAndActions }))}
+                          placeholder={t.kuseBuilder.website.linksPlaceholder}
+                          compact
+                        />
+                      ) : null}
                     </div>
                   </>
                 ) : null}

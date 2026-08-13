@@ -123,6 +123,12 @@
       "title": "更多選填設定",
       "hint": "風格、格式、語氣、必要內容與其他限制"
     },
+    "visual": {
+      "style": "視覺風格（選填）",
+      "stylePlaceholder": "例如：溫暖的編輯插畫、柔和日光、校園藍點綴",
+      "content": "畫面必要元素（選填）",
+      "contentPlaceholder": "例如：三位學生在樹下閱讀；上方保留標題空間"
+    },
     "website": {
       "title": "網站需求",
       "mvpBadge": "現場示範首選",

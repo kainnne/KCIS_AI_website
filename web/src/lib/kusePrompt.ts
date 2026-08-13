@@ -9,6 +9,8 @@ export type KuseTaskKind =
   | "class_activity"
   | "presentation"
   | "poster"
+  | "image"
+  | "research"
   | "website"
   | "notice"
   | "meeting_minutes"
@@ -27,12 +29,15 @@ export type KuseSource =
   | "transcript"
   | "official_document"
   | "spreadsheet"
-  | "existing_template";
+  | "existing_template"
+  | "web_sources"
+  | "reference_image";
 export type KuseFormat =
   | "structured"
   | "table"
   | "slides"
   | "poster"
+  | "image"
   | "webpage"
   | "checklist"
   | "notice";
@@ -54,7 +59,12 @@ export type KuseRequirement =
   | "speaker_notes"
   | "mobile_first"
   | "working_actions"
-  | "shareable_page";
+  | "shareable_page"
+  | "citations"
+  | "evidence_gaps"
+  | "key_takeaways"
+  | "visual_hierarchy"
+  | "accurate_text";
 
 export type KusePromptInput = {
   role: KuseRole;
@@ -96,6 +106,8 @@ export const SOURCE_LABELS: LabelMap<KuseSource> = {
   official_document: { en: "Official document / policy", "zh-TW": "正式文件／規定" },
   spreadsheet: { en: "Spreadsheet or data", "zh-TW": "試算表／數據" },
   existing_template: { en: "Existing template", "zh-TW": "既有範本" },
+  web_sources: { en: "Public web sources", "zh-TW": "公開網路來源" },
+  reference_image: { en: "Reference image", "zh-TW": "參考圖片" },
 };
 
 export const FORMAT_LABELS: LabelMap<KuseFormat> = {
@@ -103,6 +115,7 @@ export const FORMAT_LABELS: LabelMap<KuseFormat> = {
   table: { en: "Table", "zh-TW": "表格" },
   slides: { en: "Presentation / slides", "zh-TW": "簡報／投影片" },
   poster: { en: "Poster / visual", "zh-TW": "海報／視覺成品" },
+  image: { en: "Generated image", "zh-TW": "生成圖片" },
   webpage: { en: "Kuse Page / webpage", "zh-TW": "Kuse Page／網頁" },
   checklist: { en: "Checklist", "zh-TW": "檢核清單" },
   notice: { en: "Notice / message", "zh-TW": "公告／訊息格式" },
@@ -116,6 +129,8 @@ export const ARTIFACT_LABELS: LabelMap<KuseTaskKind> = {
   class_activity: { en: "a ready-to-use activity guide", "zh-TW": "可直接使用的活動指引" },
   presentation: { en: "a complete, editable presentation", "zh-TW": "完整可編輯的簡報成品" },
   poster: { en: "a finished poster or the closest editable visual artifact", "zh-TW": "完整海報或最接近的可編輯視覺成品" },
+  image: { en: "a finished image saved in the Kuse workspace", "zh-TW": "儲存在 Kuse 工作區的完整圖片成品" },
+  research: { en: "a sourced, editable research report", "zh-TW": "附來源、可編輯的研究報告" },
   website: { en: "a shareable Kuse Page", "zh-TW": "可分享的 Kuse Page 網站" },
   notice: { en: "an editable notice document", "zh-TW": "可編輯的公告文件" },
   meeting_minutes: { en: "an editable meeting-minutes document", "zh-TW": "可編輯的會議紀錄文件" },
@@ -149,6 +164,11 @@ export const REQUIREMENT_LABELS: LabelMap<KuseRequirement> = {
   mobile_first: { en: "Mobile-first layout", "zh-TW": "手機優先版面" },
   working_actions: { en: "Working buttons and links", "zh-TW": "可正常使用的按鈕與連結" },
   shareable_page: { en: "A shareable Kuse Page", "zh-TW": "可分享的 Kuse Page" },
+  citations: { en: "Sources for key claims", "zh-TW": "重要結論附來源" },
+  evidence_gaps: { en: "Evidence gaps and conflicts", "zh-TW": "證據不足與衝突" },
+  key_takeaways: { en: "Key takeaways", "zh-TW": "關鍵結論" },
+  visual_hierarchy: { en: "Clear visual hierarchy", "zh-TW": "清楚的視覺層級" },
+  accurate_text: { en: "Check all text in the image", "zh-TW": "檢查圖片內文字" },
 };
 
 function selectedLabels<T extends string>(
@@ -198,6 +218,12 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
           : "先在對話中確認網站架構，不建立或發布頁面。",
       });
     }
+    if (input.taskKind === "image") {
+      notes.push({ title: "圖片", body: "指定主體、構圖與風格；成品要保存到工作區。" });
+    }
+    if (input.taskKind === "research") {
+      notes.push({ title: "研究", body: "重要結論附來源，證據不足也要說明。" });
+    }
     return notes;
   }
 
@@ -227,6 +253,12 @@ export function buildPromptDesignNotes(input: KusePromptInput, locale: Locale): 
         ? (input.siteScope === "mvp" ? "One page, 4–6 sections; then click Publish now." : "Build core pages first; then click Publish now.")
         : "Confirm the site structure in conversation; do not create or publish a page yet.",
     });
+  }
+  if (input.taskKind === "image") {
+    notes.push({ title: "Image", body: "Define subject, composition, and style; save the result in the workspace." });
+  }
+  if (input.taskKind === "research") {
+    notes.push({ title: "Research", body: "Cite key findings and state where evidence is limited." });
   }
   return notes;
 }
@@ -285,6 +317,18 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
           : "這一步只在對話中確認網站架構、區塊與內容草稿，不建立或發布 Kuse Page。",
       });
     }
+    if (input.taskKind === "image") {
+      notes.push({
+        title: "把畫面需求說清楚",
+        body: `圖片 Prompt 會說明主體、用途、構圖與風格「${field(input.visualStyle, "尚未指定")}」，並列出必要元素「${field(input.mustIncludeContent, "依任務安排")}」。成品模式要求直接生成圖片並保存，不能只回傳生成描述。`,
+      });
+    }
+    if (input.taskKind === "research") {
+      notes.push({
+        title: "讓研究可以被查證",
+        body: "研究會先回答問題，再列關鍵發現與來源；若資料不足或互相矛盾，也必須明確標示，避免把推論寫成事實。",
+      });
+    }
 
     notes.push({
       title: "最後仍要由人判斷",
@@ -339,6 +383,18 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
         : "Use the conversation to confirm the site structure, sections, and content draft. Do not create or publish a Kuse Page in this step.",
     });
   }
+  if (input.taskKind === "image") {
+    notes.push({
+      title: "Make the visual request concrete",
+      body: `The prompt defines the subject, purpose, composition, and style “${field(input.visualStyle, "not specified")},” plus required elements “${field(input.mustIncludeContent, "based on the task")}.” Artifact mode must generate and save the image, not return only a generation prompt.`,
+    });
+  }
+  if (input.taskKind === "research") {
+    notes.push({
+      title: "Make the research verifiable",
+      body: "The report answers the question first, then gives sourced findings. Limited or conflicting evidence must be labeled instead of being presented as fact.",
+    });
+  }
 
   notes.push({
     title: "Keep a human in the loop",
@@ -354,8 +410,11 @@ export function buildKusePrompt(input: KusePromptInput): string {
   const format = input.format ? FORMAT_LABELS[input.format][locale] : "";
   const tone = input.tone ? TONE_LABELS[input.tone][locale] : "";
   const isWebsite = input.taskKind === "website";
+  const isVisual = input.taskKind === "image" || input.taskKind === "poster";
+  const isResearch = input.taskKind === "research";
   const isMvpWebsite = isWebsite && input.siteScope === "mvp";
   const isNoMaterial = input.sources.includes("no_material");
+  const usesWebSources = input.sources.includes("web_sources");
   const isArtifact = input.deliveryMode === "artifact";
   const artifact = ARTIFACT_LABELS[input.taskKind][locale];
   const zhTaskRule: Record<KuseTaskKind, string> = {
@@ -366,6 +425,8 @@ export function buildKusePrompt(input: KusePromptInput): string {
     class_activity: "課堂活動需列出目標、時間、材料、教師步驟、學生任務與完成判準。",
     presentation: "簡報需有清楚敘事與逐頁結構；每頁只處理一個重點，避免大段文字與沒有依據的數據。選擇成品模式時直接建立完整投影片，不要停在逐頁大綱。",
     poster: "海報需有單一溝通目標、清楚視覺層級與可快速閱讀的重點。選擇成品模式時直接建立海報或最接近的可編輯視覺成品，不要只提供文案或版面建議。",
+    image: "圖片需先抓住主體、用途、構圖、風格、色彩、光線與尺寸。選擇成品模式時直接生成並保存圖片，不要只提供圖片 Prompt 或描述。圖片內文字必須精簡且逐字檢查。",
+    research: "研究需先界定問題與範圍，再蒐集、比較與整合可信來源。重要結論需附可追溯來源，並分開標示已知事實、分析推論、證據不足與互相衝突之處。",
     website: "網站需服務明確使用者、解決一項真實問題，並讓使用者知道下一步行動。",
     notice: "公告需先整理對象、目的、時間、地點、必要行動與承辦窗口；缺少資訊時保留待確認欄位。",
     meeting_minutes: "會議紀錄需區分討論重點、決議、待辦、負責人與期限；沒有明確說出的決議不得自行補寫。",
@@ -384,6 +445,8 @@ export function buildKusePrompt(input: KusePromptInput): string {
     class_activity: "List the objective, timing, materials, teacher steps, student actions, and completion criteria.",
     presentation: "Use a clear narrative and slide-by-slide structure. Give each slide one purpose; avoid dense copy and unsupported data. In artifact mode, create the complete presentation instead of stopping at an outline.",
     poster: "Give the poster one communication goal, clear visual hierarchy, and scannable key points. In artifact mode, create the poster or closest editable visual artifact instead of returning only copy or layout advice.",
+    image: "Define the subject, purpose, composition, style, color, lighting, and dimensions. In artifact mode, generate and save the image instead of returning only an image prompt or description. Keep in-image text minimal and verify it character by character.",
+    research: "Define the question and scope before gathering, comparing, and synthesizing credible sources. Cite every key claim and separate established facts, analysis, evidence gaps, and conflicting findings.",
     website: "Serve a clearly defined user, solve one real problem, and make the user's next action explicit.",
     notice: "Organize the audience, purpose, time, location, required action, and contact. Leave explicit placeholders for missing facts.",
     meeting_minutes: "Separate discussion, decisions, action items, owners, and deadlines. Never invent a decision that was not stated.",
@@ -411,7 +474,8 @@ export function buildKusePrompt(input: KusePromptInput): string {
       "【材料】",
       isNoMaterial ? "我目前沒有資料可提供。可用一般知識先完成初稿；校內日期、數字、規定與連結請保留待補。" : sources ? `優先依據：${sources}。` : "目前未指定材料；若完成任務需要資料，請一次向我索取。",
       input.materialDetails.trim() ? `材料說明：${input.materialDetails.trim()}` : "",
-      isNoMaterial ? "不要自行補造校內資訊、數據、日期、法規或引用來源。" : "只能依據我提供或指定的材料，不要自行補造教材內容、數據、日期、法規或引用來源。",
+      isResearch && usesWebSources ? "可搜尋公開網路來源；優先使用第一手、官方、近期且可追溯的資料，記錄標題、發布者、日期與網址。" : "",
+      isNoMaterial ? "不要自行補造校內資訊、數據、日期、法規或引用來源。" : isResearch && usesWebSources ? "除指定材料外可使用已查證的公開來源；不得補造資料、引文或不存在的網址。" : "只能依據我提供或指定的材料，不要自行補造教材內容、數據、日期、法規或引用來源。",
       "",
       "【輸出規格】",
       `使用對象：${field(input.audience, "未指定；請先詢問")}`,
@@ -426,6 +490,9 @@ export function buildKusePrompt(input: KusePromptInput): string {
       isArtifact ? `目標成品：${artifact}。` : "請在目前對話中提供清楚的大綱、草稿或建議，不建立檔案、頁面或其他成品。",
       isArtifact ? "請使用 Kuse 內建的內容／檔案建立能力，把成品存入工作區並開啟讓我檢查。不要只回覆大綱、示例文案、製作步驟或「你可以如何製作」。" : "完成對話回答後，只問我是否要把這個版本轉成正式成品。",
       isArtifact ? "若 Kuse 沒有完全對應的原生格式，請建立最接近且可編輯的成品，並用一句話說明格式差異；不要自行退回成純文字大綱。" : "",
+      isVisual ? "【視覺需求】" : "",
+      isVisual ? `視覺風格：${field(input.visualStyle, "清楚、符合使用對象與用途")}` : "",
+      isVisual ? `必要元素：${field(input.mustIncludeContent, "依任務描述安排主體與畫面；沒有提供的校徽、人物或品牌素材不得自行仿造")}` : "",
       isWebsite ? "【網站需求】" : "",
       isWebsite ? `交付模式：${isMvpWebsite ? "快速 MVP（一頁式、先小後大）" : "完整版本（較完整的資訊架構與內容）"}` : "",
       isWebsite ? `要解決的問題：${field(input.problemToSolve, "未指定；請先詢問")}` : "",
@@ -443,6 +510,10 @@ export function buildKusePrompt(input: KusePromptInput): string {
       "4. 先產出可直接使用的完整初稿，再列出需要人工確認的項目。",
       "5. 不使用真實學生姓名、成績、輔導、健康、人事或其他敏感資料。",
       "6. 正確性、適齡性、法規、日期與引用內容若無法從材料確認，明確標示「待人工查證」。",
+      isResearch ? "7. 研究報告開頭先直接回答研究問題，再列關鍵結論；每項重要結論旁附來源，結尾列出來源清單、證據不足與需要人工複核處。" : "",
+      isResearch ? "8. 不把搜尋摘要當成完整證據；遇到來源互相矛盾時並列呈現，不自行挑選方便的答案。" : "",
+      isVisual && isArtifact ? "7. 使用 Kuse 的圖片建立能力與建議的圖片模型生成成品，保存到工作區並開啟檢查。若有參考圖，只參考指定的構圖或風格，不複製可識別人物、受保護角色或未授權品牌。" : "",
+      isVisual && !isArtifact ? "7. 只在對話中提供圖片創意方向、構圖與可用的生成描述；這一步不要生成圖片。" : "",
       isWebsite && isArtifact ? "7. 請使用 Kuse 的 Web Page／AI Pages 能力建立網站成品，不要只回傳下載用或無法分享的獨立 HTML 檔案，也不要改做成簡報。" : "",
       isWebsite && !isArtifact ? "7. 只在對話中提供網站架構、區塊與內容草稿；這一步不要建立或發布 Kuse Page。" : "",
       isWebsite && isArtifact ? "8. 先用極短架構確認區塊後直接製作；最多一次集中詢問必要缺漏，能用清楚的待補欄位處理時就繼續，不要反覆來回規劃。" : "",
@@ -467,7 +538,8 @@ export function buildKusePrompt(input: KusePromptInput): string {
     "[MATERIALS]",
     isNoMaterial ? "I do not have source material. Use general knowledge for a first draft, but leave school-specific dates, figures, policy, and links as placeholders." : sources ? `Use these sources first: ${sources}.` : "No source is selected. Ask once for material if the task requires it.",
     input.materialDetails.trim() ? `Material notes: ${input.materialDetails.trim()}` : "",
-    isNoMaterial ? "Do not invent school-specific facts, figures, dates, policy, or citations." : "Use only the materials I provide or identify. Do not invent textbook content, data, dates, policy, or citations.",
+    isResearch && usesWebSources ? "You may search public web sources. Prefer primary, official, recent, and traceable evidence, recording the title, publisher, date, and URL." : "",
+    isNoMaterial ? "Do not invent school-specific facts, figures, dates, policy, or citations." : isResearch && usesWebSources ? "You may supplement selected materials with verified public sources. Never invent data, quotations, or URLs." : "Use only the materials I provide or identify. Do not invent textbook content, data, dates, policy, or citations.",
     "",
     "[OUTPUT SPECIFICATIONS]",
     `Audience: ${field(input.audience, "Not specified — ask me first")}`,
@@ -482,6 +554,9 @@ export function buildKusePrompt(input: KusePromptInput): string {
     isArtifact ? `Target artifact: ${artifact}.` : "Provide a clear outline, draft, or recommendation in this conversation. Do not create a file, page, or other artifact yet.",
     isArtifact ? "Use Kuse's built-in content and file-creation capabilities, save the artifact in the workspace, and open it for review. Do not return only an outline, sample copy, production steps, or advice about how I could make it." : "After the conversation response, ask only whether I want to turn this version into a finished artifact.",
     isArtifact ? "If Kuse does not support the exact native format, create the closest editable artifact and explain the format difference in one sentence. Do not silently fall back to a text outline." : "",
+    isVisual ? "[VISUAL REQUIREMENTS]" : "",
+    isVisual ? `Visual style: ${field(input.visualStyle, "Clear and appropriate for the audience and purpose")}` : "",
+    isVisual ? `Required elements: ${field(input.mustIncludeContent, "Arrange the subject and scene from the task; do not imitate an unprovided school logo, identifiable person, protected character, or unauthorized brand asset")}` : "",
     isWebsite ? "[WEBSITE REQUIREMENTS]" : "",
     isWebsite ? `Delivery mode: ${isMvpWebsite ? "Quick MVP (one page, start small)" : "Complete version (broader information architecture and content)"}` : "",
     isWebsite ? `Problem to solve: ${field(input.problemToSolve, "Not specified — ask me first")}` : "",
@@ -499,6 +574,10 @@ export function buildKusePrompt(input: KusePromptInput): string {
     "4. Produce a complete, usable first draft, followed by a short list of items that need human review.",
     "5. Do not use real student names, grades, counseling, health, HR, or other sensitive data.",
     "6. Mark accuracy, age suitability, policy, dates, and citations as 'verify manually' whenever the supplied material cannot confirm them.",
+    isResearch ? "7. Open the research report with a direct answer to the question, followed by key findings. Cite every important claim, then finish with a source list, evidence gaps, and items requiring human review." : "",
+    isResearch ? "8. Do not treat search snippets as complete evidence. When sources conflict, present the disagreement instead of selecting the most convenient answer." : "",
+    isVisual && isArtifact ? "7. Use Kuse's image-creation capability and the recommended image model to generate the artifact, save it in the workspace, and open it for review. If a reference image is supplied, use only the requested composition or style cues; do not copy identifiable people, protected characters, or unauthorized brand assets." : "",
+    isVisual && !isArtifact ? "7. Provide only the creative direction, composition, and a usable generation description in the conversation. Do not generate an image in this step." : "",
     isWebsite && isArtifact ? "7. Use Kuse's Web Page / AI Pages capability to create the website deliverable. Do not return only a downloadable or unshareable standalone HTML file, and do not turn the task into a slide deck." : "",
     isWebsite && !isArtifact ? "7. Provide the site structure, sections, and content draft only in the conversation. Do not create or publish a Kuse Page in this step." : "",
     isWebsite && isArtifact ? "8. Confirm the section plan briefly, then build. Ask at most one consolidated set of essential questions; continue with clearly labeled placeholders when possible instead of prolonging planning." : "",

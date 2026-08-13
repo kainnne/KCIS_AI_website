@@ -123,6 +123,12 @@
       "title": "More optional settings",
       "hint": "Style, format, tone, required items, and other limits"
     },
+    "visual": {
+      "style": "Visual style (optional)",
+      "stylePlaceholder": "e.g. Warm editorial illustration, soft daylight, school blue accents",
+      "content": "Required visual elements (optional)",
+      "contentPlaceholder": "e.g. Three students reading under a tree; leave open space for a title"
+    },
     "website": {
       "title": "Website details",
       "mvpBadge": "Recommended for a live demo",
