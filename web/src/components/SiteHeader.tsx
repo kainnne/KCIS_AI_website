@@ -30,7 +30,7 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
           </button>
         ) : null}
         <a
-          href="https://kainnne.com/"
+          href="https://kcis.kainnne.com/me"
           target="_blank"
           rel="noreferrer"
           className="kc-btn-kainnne"
