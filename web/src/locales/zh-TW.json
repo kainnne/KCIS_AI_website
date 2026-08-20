@@ -101,24 +101,6 @@
       "outputLanguage": "Prompt 與產出語言",
       "build": "建立 Prompt"
     },
-    "quick": {
-      "title": "精簡化任務",
-      "on": "讓 Kuse 少追問、少規劃，先完成可用初稿。",
-      "off": "Kuse 可以花較多時間詢問與規劃。",
-      "enabled": "已開啟",
-      "disabled": "已關閉"
-    },
-    "delivery": {
-      "eyebrow": "交付方式",
-      "title": "你希望 Kuse 最後交給你什麼？",
-      "artifactBadge": "建議",
-      "artifact": "直接做成品",
-      "artifactHint": "使用 Kuse 的建立工具，把結果存進工作區；不能只在對話裡回答大綱。",
-      "conversationBadge": "先討論",
-      "conversation": "先在對話中回答",
-      "conversationHint": "適合腦力激盪、比較方向，或先確認大綱，再決定是否建立檔案。",
-      "conversationResult": "對話中的大綱或文字草稿"
-    },
     "advanced": {
       "title": "更多選填設定",
       "hint": "風格、格式、語氣、必要內容與其他限制"
@@ -187,7 +169,7 @@
       "task": "任務",
       "materials": "材料",
       "output": "產出語言",
-      "delivery": "交付方式",
+      "project": "目標成品",
       "none": "需要材料時由 Kuse 先詢問"
     }
   },

@@ -218,8 +218,6 @@ function initialInput(locale: Locale): KusePromptInput {
     siteScope: "mvp",
     mustIncludeContent: "",
     linksAndActions: "",
-    executionMode: "quick",
-    deliveryMode: "artifact",
     outputLanguage: locale,
   };
 }
@@ -329,7 +327,6 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
             ? ["visual_hierarchy"]
             : [],
       siteScope: "mvp",
-      deliveryMode: "artifact",
       problemToSolve: "",
       primaryAction: "",
       visualStyle: "",
@@ -447,54 +444,6 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
 
         {step === "specs" ? (
           <StepPanel key="kuse-specs" title={t.kuseBuilder.specs.title} subtitle={t.kuseBuilder.specs.subtitle}>
-            <section className="kc-delivery-mode" aria-labelledby="kuse-delivery-title">
-              <div>
-                <p className="kc-builder-section-label">{t.kuseBuilder.delivery.eyebrow}</p>
-                <h3 id="kuse-delivery-title">{t.kuseBuilder.delivery.title}</h3>
-              </div>
-              <div className="kc-delivery-grid">
-                <button
-                  type="button"
-                  className={input.deliveryMode === "artifact" ? "is-active" : ""}
-                  aria-pressed={input.deliveryMode === "artifact"}
-                  onClick={() => setInput((current) => ({ ...current, deliveryMode: "artifact" }))}
-                >
-                  <span>{t.kuseBuilder.delivery.artifactBadge}</span>
-                  <strong>{t.kuseBuilder.delivery.artifact}</strong>
-                  <small>{t.kuseBuilder.delivery.artifactHint}</small>
-                  <em>{ARTIFACT_LABELS[input.taskKind][locale]}</em>
-                </button>
-                <button
-                  type="button"
-                  className={input.deliveryMode === "conversation" ? "is-active" : ""}
-                  aria-pressed={input.deliveryMode === "conversation"}
-                  onClick={() => setInput((current) => ({ ...current, deliveryMode: "conversation" }))}
-                >
-                  <span>{t.kuseBuilder.delivery.conversationBadge}</span>
-                  <strong>{t.kuseBuilder.delivery.conversation}</strong>
-                  <small>{t.kuseBuilder.delivery.conversationHint}</small>
-                  <em>{t.kuseBuilder.delivery.conversationResult}</em>
-                </button>
-              </div>
-            </section>
-
-            <button
-              type="button"
-              className={`kc-quick-mode ${input.executionMode === "quick" ? "is-active" : ""}`}
-              aria-pressed={input.executionMode === "quick"}
-              onClick={() => setInput((current) => ({
-                ...current,
-                executionMode: current.executionMode === "quick" ? "standard" : "quick",
-              }))}
-            >
-              <span aria-hidden>⚡</span>
-              <span>
-                <strong>{t.kuseBuilder.quick.title}</strong>
-                <small>{input.executionMode === "quick" ? t.kuseBuilder.quick.on : t.kuseBuilder.quick.off}</small>
-              </span>
-              <span className="kc-quick-state">{input.executionMode === "quick" ? t.kuseBuilder.quick.enabled : t.kuseBuilder.quick.disabled}</span>
-            </button>
-
             <div className="kc-spec-grid">
               <BuilderInput
                 id="kuse-audience"
@@ -696,8 +645,8 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
               />
               <SummaryItem label={t.kuseBuilder.summary.output} value={input.outputLanguage === "en" ? "English" : "繁體中文"} />
               <SummaryItem
-                label={t.kuseBuilder.summary.delivery}
-                value={input.deliveryMode === "artifact" ? ARTIFACT_LABELS[input.taskKind][locale] : t.kuseBuilder.delivery.conversationResult}
+                label={t.kuseBuilder.summary.project}
+                value={ARTIFACT_LABELS[input.taskKind][locale]}
               />
             </div>
 

@@ -241,19 +241,6 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     signals.push(locale === "zh-TW" ? "完整版本需要較高的規格整合能力" : "Complete mode needs stronger specification handling");
   }
 
-  if (input.executionMode === "quick") {
-    add(scores, ["gemini-flash"], 4);
-    add(scores, ["claude-sonnet"], 2);
-    signals.push(locale === "zh-TW" ? "已開啟精簡模式，增加快速模型權重" : "Quick mode increases the weight of faster models");
-  }
-
-  if (input.deliveryMode === "artifact") {
-    signals.push(locale === "zh-TW" ? "已選擇直接建立成品" : "A finished artifact is required");
-  } else {
-    add(scores, ["claude-sonnet", "gemini-flash"], 2);
-    signals.push(locale === "zh-TW" ? "只需對話草稿，增加日常快速模型權重" : "Conversation-only delivery raises everyday fast models");
-  }
-
   // Kang Chiao accounts have ample credits, so task fit and quality outrank cost.
   add(scores, ["claude-opus", "gpt-5-5"], 1);
 
@@ -271,8 +258,8 @@ export function recommendKuseModels(input: KusePromptInput, locale: Locale): Mod
     alternative: { ...alternative, score: scores[alternative.id], explanation: explain(alternative) },
     signals: signals.slice(0, 3),
     method: locale === "zh-TW"
-      ? "依任務、材料、範圍與速度推薦。Gemini Pro 因流量較高會先降低權重，只有多模態或長材料真的適合時才會升回來。"
-      : "The score uses task, sources, scope, and speed. Gemini Pro starts lower because of its heavier usage and rises only for genuinely suitable multimodal or long-context work.",
+      ? "依任務、材料與專案範圍推薦。Gemini Pro 因流量較高會先降低權重，只有多模態或長材料真的適合時才會升回來。"
+      : "The score uses task, sources, and project scope. Gemini Pro starts lower because of its heavier usage and rises only for genuinely suitable multimodal or long-context work.",
     alternativeLabel: locale === "zh-TW" ? "想換一種取向，也可以考慮" : "For a different balance, also consider",
     availabilityNote: locale === "zh-TW"
       ? "Kuse 的模型名稱可能更新；請選同系列最接近且帳號中可用的版本。未公開能力定位的模型不會被本工具猜測評分。"
