@@ -98,7 +98,6 @@
       "mustInclude": "Must include (optional)",
       "extra": "Other constraints (optional)",
       "extraPlaceholder": "e.g. Use only supplied facts; include placeholders for missing information",
-      "outputLanguage": "Prompt and output language",
       "build": "Build prompt"
     },
     "advanced": {
@@ -168,7 +167,6 @@
       "role": "Role",
       "task": "Task",
       "materials": "Materials",
-      "output": "Output",
       "project": "Target project",
       "none": "Kuse will ask if material is needed"
     }
@@ -280,5 +278,5 @@
     "chatGptHint": "Flexible AI workspace",
     "geminiHint": "Google AI workspace"
   },
-  "footer": ""
+  "footer": "Designed by"
 }

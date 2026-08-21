@@ -394,13 +394,10 @@ export function NavigatorApp() {
         ) : null}
       </AnimatePresence>
 
-      {t.footer ? (
-        <footer className="mx-auto w-full max-w-5xl px-4 py-10 text-center text-xs text-kc-muted sm:px-6">
-          {t.footer}
-        </footer>
-      ) : (
-        <div className="py-8" />
-      )}
+      <footer className="kc-site-footer mx-auto w-full max-w-5xl px-4 py-10 text-center text-xs sm:px-6">
+        <span>{t.footer} </span>
+        <a href="https://kainnne.com" target="_blank" rel="noreferrer">Kainnne</a>
+      </footer>
     </div>
   );
 }

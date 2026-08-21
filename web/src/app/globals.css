@@ -177,7 +177,6 @@ input:focus-visible {
 .kc-btn-primary,
 .kc-btn-hero,
 .kc-btn-ghost,
-.kc-btn-kainnne,
 .kc-launch-link {
   position: relative;
   overflow: hidden;
@@ -238,44 +237,40 @@ input:focus-visible {
   transform: translateY(-2px);
 }
 
-.kc-btn-kainnne {
-  @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background: linear-gradient(115deg, #db4f94, #9a5cc8 54%, #5b91d3 100%);
-  background-size: 180% 180%;
-  box-shadow:
-    0 9px 24px rgba(219, 79, 148, 0.24),
-    0 0 0 1px rgba(219, 79, 148, 0.1);
-  transition: 240ms ease;
+.kc-brand-home > span,
+.kc-brand-home > strong {
+  color: var(--kc-blue-deep);
+  font-size: 0.82rem;
 }
 
-.kc-btn-kainnne::before {
-  position: absolute;
-  inset: -2px;
-  z-index: -1;
-  border-radius: inherit;
-  content: "";
-  background: linear-gradient(100deg, #ff91c8, #b69cff, #76d7cf);
-  filter: blur(11px);
-  opacity: 0;
-  transition: opacity 240ms ease;
+.kc-brand-home > span {
+  color: rgba(27, 79, 156, 0.3);
 }
 
-.kc-btn-kainnne:hover {
-  background-position: 100% 50%;
-  transform: translateY(-2px) scale(1.02);
+.kc-brand-home > strong {
+  font-weight: 700;
+  transition: color 180ms ease;
 }
 
-.kc-btn-kainnne:hover::before {
-  opacity: 0.58;
+.kc-brand-home:hover > strong {
+  color: var(--kc-purple);
 }
 
-.kc-kainnne-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 9999px;
-  background: #ffd5eb;
-  box-shadow: 0 0 0 4px rgba(255, 213, 235, 0.18);
+.kc-site-footer {
+  color: rgba(69, 83, 108, 0.54);
+  letter-spacing: 0.02em;
+}
+
+.kc-site-footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(69, 83, 108, 0.22);
+  text-underline-offset: 0.2em;
+  transition: color 180ms ease;
+}
+
+.kc-site-footer a:hover {
+  color: var(--kc-purple);
 }
 
 .kc-language-switch {
@@ -1744,13 +1739,12 @@ input:focus-visible {
     justify-content: flex-end;
   }
 
-  .kc-btn-kainnne {
-    padding-inline: 0.75rem;
+  .kc-brand-home {
+    gap: 0.4rem;
   }
 
-  .kc-header-home {
-    order: 3;
-    padding: 0.42rem 0.72rem;
+  .kc-brand-home > span,
+  .kc-brand-home > strong {
     font-size: 0.7rem;
   }
 

@@ -40,7 +40,7 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
     { id: "image", label: { en: "Image", "zh-TW": "圖片" } },
     { id: "research", label: { en: "Research", "zh-TW": "研究" } },
     { id: "website", label: { en: "Practical website", "zh-TW": "實用網站" } },
-    { id: "other", label: { en: "Another task", "zh-TW": "其他任務" } },
+    { id: "other", label: { en: "Other", "zh-TW": "其他" } },
   ],
   admin: [
     { id: "notice", label: { en: "Notice or message", "zh-TW": "公告／通知" } },
@@ -55,7 +55,7 @@ const TASK_OPTIONS: Record<KuseRole, Array<{ id: KuseTaskKind; label: Record<Loc
     { id: "form", label: { en: "Form questions", "zh-TW": "表單題目" } },
     { id: "report", label: { en: "Report or data brief", "zh-TW": "報告／數據摘要" } },
     { id: "resource_guide", label: { en: "Resource guide or FAQ", "zh-TW": "資源指南／FAQ" } },
-    { id: "other", label: { en: "Another task", "zh-TW": "其他任務" } },
+    { id: "other", label: { en: "Other", "zh-TW": "其他" } },
   ],
 };
 
@@ -199,7 +199,7 @@ const TASK_HINTS: Record<KuseTaskKind, Record<Locale, TaskHints>> = {
   },
 };
 
-function initialInput(locale: Locale): KusePromptInput {
+function initialInput(): KusePromptInput {
   return {
     role: "teacher",
     taskKind: "other",
@@ -218,7 +218,6 @@ function initialInput(locale: Locale): KusePromptInput {
     siteScope: "mvp",
     mustIncludeContent: "",
     linksAndActions: "",
-    outputLanguage: locale,
   };
 }
 
@@ -226,7 +225,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   const { t, locale } = useI18n();
   const reduce = useReducedMotion();
   const [step, setStep] = useState<BuilderStep>("role");
-  const [input, setInput] = useState<KusePromptInput>(() => initialInput(locale));
+  const [input, setInput] = useState<KusePromptInput>(() => initialInput());
   const [draftPrompt, setDraftPrompt] = useState("");
   const [copied, setCopied] = useState(false);
   const [learningDetailed, setLearningDetailed] = useState(false);
@@ -239,10 +238,9 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   }
 
   function selectRole(role: KuseRole) {
-    setInput((current) => ({
-      ...initialInput(locale),
+    setInput(() => ({
+      ...initialInput(),
       role,
-      outputLanguage: current.outputLanguage,
     }));
     go("task");
   }
@@ -269,7 +267,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   }
 
   function finish() {
-    setDraftPrompt(buildKusePrompt(input));
+    setDraftPrompt(buildKusePrompt(input, locale));
     go("result");
   }
 
@@ -284,7 +282,7 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
   }
 
   function restart() {
-    setInput(initialInput(locale));
+    setInput(initialInput());
     setDraftPrompt("");
     setCopied(false);
     setLearningDetailed(false);
@@ -597,21 +595,6 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
               </div>
             </details>
 
-            <ChoiceGroup label={t.kuseBuilder.specs.outputLanguage}>
-              <ChoiceButton
-                active={input.outputLanguage === "en"}
-                onClick={() => setInput((current) => ({ ...current, outputLanguage: "en" }))}
-              >
-                English
-              </ChoiceButton>
-              <ChoiceButton
-                active={input.outputLanguage === "zh-TW"}
-                onClick={() => setInput((current) => ({ ...current, outputLanguage: "zh-TW" }))}
-              >
-                繁體中文
-              </ChoiceButton>
-            </ChoiceGroup>
-
             <BuilderNav
               back={t.nav.back}
               next={t.kuseBuilder.specs.build}
@@ -643,7 +626,6 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                 label={t.kuseBuilder.summary.materials}
                 value={input.sources.length ? input.sources.map((source) => SOURCE_LABELS[source][locale]).join(" · ") : t.kuseBuilder.summary.none}
               />
-              <SummaryItem label={t.kuseBuilder.summary.output} value={input.outputLanguage === "en" ? "English" : "繁體中文"} />
               <SummaryItem
                 label={t.kuseBuilder.summary.project}
                 value={ARTIFACT_LABELS[input.taskKind][locale]}

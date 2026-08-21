@@ -12,7 +12,17 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
 
   return (
     <header className="kc-site-header mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-      <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label={t.meta.brand}>
+      <Link
+        href="/"
+        className="kc-brand-home group flex min-w-0 items-center gap-3"
+        aria-label={`${t.meta.brand}｜${t.nav.home}`}
+        onClick={(event) => {
+          if (onHome) {
+            event.preventDefault();
+            onHome();
+          }
+        }}
+      >
         <Image
           src={asset("/brand/kangchiao-logo.png")}
           alt=""
@@ -21,24 +31,11 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
           className="h-8 w-auto sm:h-9"
           priority
         />
+        <span aria-hidden>｜</span>
+        <strong>{t.nav.home}</strong>
       </Link>
 
       <div className="flex items-center gap-2">
-        {onHome ? (
-          <button type="button" className="kc-btn-ghost kc-header-home" onClick={onHome}>
-            {t.nav.allTools}
-          </button>
-        ) : null}
-        <a
-          href="https://kcis.kainnne.com/me"
-          target="_blank"
-          rel="noreferrer"
-          className="kc-btn-kainnne"
-        >
-          <span className="kc-kainnne-dot" aria-hidden />
-          <span>Kainnne</span>
-          <span aria-hidden>↗</span>
-        </a>
         <div className="kc-language-switch" role="group" aria-label="Site language">
           <button
             type="button"

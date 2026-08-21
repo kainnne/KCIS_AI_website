@@ -21,11 +21,11 @@ const body = Noto_Sans_TC({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ai-tools.kcis.kainnne.com"),
-  title: "Kang Chiao AI Tools",
-  description: "Find the right AI tool or build a structured, Kuse-ready prompt.",
+  title: "康橋 AI 工具站",
+  description: "為教學、學習與行政工作找到合適的 AI 工具，或建立可直接交給 Kuse 的結構化 Prompt。",
   openGraph: {
-    title: "Kang Chiao AI Tools",
-    description: "Choose the AI Tool Navigator or build a structured, Kuse-ready prompt.",
+    title: "康橋 AI 工具站",
+    description: "選擇 AI 工具導航，或建立可直接交給 Kuse 的結構化 Prompt。",
     url: "/",
     siteName: "Kang Chiao AI Tools",
     images: [{ url: "/og-tools.png", width: 1662, height: 946, alt: "Kang Chiao AI Tools" }],
@@ -33,15 +33,15 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kang Chiao AI Tools",
-    description: "Choose the AI Tool Navigator or build a structured, Kuse-ready prompt.",
+    title: "康橋 AI 工具站",
+    description: "選擇 AI 工具導航，或建立可直接交給 Kuse 的結構化 Prompt。",
     images: ["/og-tools.png"],
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="zh-Hant">
       <body className={`${display.variable} ${body.variable} antialiased`}>
         <I18nProvider>{children}</I18nProvider>
       </body>

@@ -82,7 +82,6 @@ export type KusePromptInput = {
   siteScope: KuseSiteScope;
   mustIncludeContent: string;
   linksAndActions: string;
-  outputLanguage: Locale;
 };
 
 type LabelMap<T extends string> = Record<T, Record<Locale, string>>;
@@ -370,8 +369,7 @@ export function buildDetailedPromptDesignNotes(input: KusePromptInput, locale: L
   return notes;
 }
 
-export function buildKusePrompt(input: KusePromptInput): string {
-  const locale = input.outputLanguage;
+export function buildKusePrompt(input: KusePromptInput, locale: Locale): string {
   const sources = selectedLabels(input.sources, SOURCE_LABELS, locale);
   const requirements = selectedLabels(input.requirements, REQUIREMENT_LABELS, locale);
   const format = input.format ? FORMAT_LABELS[input.format][locale] : "";

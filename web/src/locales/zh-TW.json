@@ -98,7 +98,6 @@
       "mustInclude": "必須包含（選填）",
       "extra": "其他限制（選填）",
       "extraPlaceholder": "例如：只能使用提供的事實；缺少資訊時保留待填欄位",
-      "outputLanguage": "Prompt 與產出語言",
       "build": "建立 Prompt"
     },
     "advanced": {
@@ -168,7 +167,6 @@
       "role": "角色",
       "task": "任務",
       "materials": "材料",
-      "output": "產出語言",
       "project": "目標成品",
       "none": "需要材料時由 Kuse 先詢問"
     }
@@ -280,5 +278,5 @@
     "chatGptHint": "彈性的 AI 工作空間",
     "geminiHint": "Google AI 工作空間"
   },
-  "footer": ""
+  "footer": "Designed by"
 }
