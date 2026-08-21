@@ -1,5 +1,6 @@
-import type { Department, Level, Locale, Role, UserNeed } from "./types";
-import { getComplexity } from "./adaptive";
+import en from "../locales/en.json";
+import zhTW from "../locales/zh-TW.json";
+import type { Department, Level, Locale, UserNeed } from "./types";
 
 function levelLabel(level: Level, locale: Locale): string {
   const map: Record<Level, { "zh-TW": string; en: string }> = {
@@ -12,18 +13,7 @@ function levelLabel(level: Level, locale: Locale): string {
   return map[level][locale];
 }
 
-function roleLabel(role: Role, locale: Locale): string {
-  if (locale === "zh-TW") {
-    if (role === "teacher") return "教師";
-    if (role === "admin") return "行政人員";
-    return "學生";
-  }
-  if (role === "teacher") return "teacher";
-  if (role === "admin") return "administrative staff";
-  return "student";
-}
-
-function departmentLabel(dept: Department, locale: Locale): string {
+function departmentLabel(department: Department, locale: Locale): string {
   const map: Record<Department, { "zh-TW": string; en: string }> = {
     general_affairs: { "zh-TW": "總務處", en: "General Affairs" },
     hr: { "zh-TW": "人事處／人資", en: "HR" },
@@ -32,155 +22,83 @@ function departmentLabel(dept: Department, locale: Locale): string {
     student_affairs: { "zh-TW": "學務處", en: "Student Affairs" },
     accounting: { "zh-TW": "會計／出納", en: "Accounting" },
     library: { "zh-TW": "圖書館", en: "Library" },
-    other_office: { "zh-TW": "其他行政單位", en: "Other office" },
+    other_office: { "zh-TW": "其他行政單位", en: "another administrative office" },
   };
-  return map[dept][locale];
+  return map[department][locale];
 }
 
-function buildAdminPrompt(need: UserNeed, hint?: string): string {
+function taskLabel(task: string | null, locale: Locale): string {
+  if (!task) return locale === "zh-TW" ? "依我提供的內容完成一項任務" : "Complete a task from the information I provide";
+
+  const tasks = locale === "zh-TW" ? zhTW.tasks : en.tasks;
+  return tasks[task as keyof typeof tasks] ?? task.replaceAll("_", " ");
+}
+
+function roleContext(need: UserNeed): string {
   const locale = need.locale;
-  const dept = need.department
-    ? departmentLabel(need.department, locale)
-    : locale === "zh-TW"
-      ? "行政單位"
-      : "an administrative office";
-  const keywords = need.keywords.length
-    ? need.keywords.join(locale === "zh-TW" ? "、" : ", ")
-    : "";
-  const note = [hint, need.note].filter(Boolean).join(locale === "zh-TW" ? "；" : "; ");
-  const task = need.task ?? (locale === "zh-TW" ? "行政文書" : "admin writing");
 
   if (locale === "zh-TW") {
-    return [
-      "你是校園行政文書助理，熟悉台灣中小學行政溝通語氣。",
-      `使用者身分：行政人員（${dept}）。`,
-      `任務：${task}。`,
-      note ? `需求說明：${note}` : "",
-      keywords ? `請務必做到：${keywords}。` : "",
-      "請先給可直接複製的草稿，再用條列標註『需人工確認』的地方。",
-      "用語正式、清楚、精簡；避免網路口語。",
-      "嚴禁輸出真實姓名、身分證字號、薪資、個資或未公開校務機密。",
-      "若涉及法規、採購金額或人事規定，請標示『請以校內正式規定為準』，不要假裝已核准。",
-      "預設輸出繁體中文。",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    if (need.role === "admin") {
+      const department = need.department ? departmentLabel(need.department, locale) : "行政單位";
+      return `你是協助康橋${department}同仁的 AI 工作夥伴。使用者可能不熟悉 AI，請用清楚、自然、容易回應的方式協助。`;
+    }
+
+    const level = levelLabel(need.level ?? "middle", locale);
+    if (need.role === "teacher") {
+      return `你是協助康橋${level}教師的 AI 教學夥伴。使用者可能不熟悉 AI，請用清楚、自然、容易回應的方式協助。`;
+    }
+    return `你是協助一位${level}學生的 AI 學習夥伴。請用符合這個學習階段、清楚自然的方式協助。`;
   }
 
-  return [
-    "You are a school administrative writing assistant.",
-    `User role: administrative staff (${dept}).`,
-    `Task: ${task}.`,
-    note ? `Request: ${note}` : "",
-    keywords ? `Must include: ${keywords}.` : "",
-    "Provide a copy-ready draft, then bullet items that need human review.",
-    "Tone: formal, clear, concise.",
-    "Never output real names, ID numbers, salaries, or confidential school data.",
-    "For policy, procurement, or HR rules, mark 'verify against official school policy' — do not invent approvals.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  if (need.role === "admin") {
+    const department = need.department ? departmentLabel(need.department, locale) : "an administrative office";
+    return `You are an AI work partner assisting Kang Chiao staff in ${department}. The user may be unfamiliar with AI, so help in a clear, natural, and easy-to-answer way.`;
+  }
+
+  const level = levelLabel(need.level ?? "middle", locale);
+  if (need.role === "teacher") {
+    return `You are an AI teaching partner assisting a Kang Chiao ${level} teacher. The user may be unfamiliar with AI, so help in a clear, natural, and easy-to-answer way.`;
+  }
+  return `You are an AI learning partner assisting a ${level} student. Help in a clear, natural way that suits this learning stage.`;
+}
+
+function selectedPreferences(need: UserNeed, hint?: string): string[] {
+  const values = [hint, ...need.keywords]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  return [...new Set(values)];
 }
 
 export function buildPrompt(need: UserNeed, hint?: string): string {
   const locale = need.locale;
-  const role = need.role ?? "student";
-
-  if (role === "admin") {
-    return buildAdminPrompt(need, hint);
-  }
-
-  const level = need.level ?? "middle";
-  const complexity = getComplexity(role, level);
-  const keywords = need.keywords.length ? need.keywords.join("、") : "";
-  const note = [hint, need.note].filter(Boolean).join("；");
+  const customTask = need.task === "other" && need.note.trim();
+  const task = customTask || taskLabel(need.task, locale);
+  const details = customTask ? "" : need.note.trim();
+  const preferences = selectedPreferences(need, hint);
 
   if (locale === "zh-TW") {
-    if (role === "student" && level === "elementary") {
-      const want = need.task
-        ? `我想做的事是：${need.task}（請用適合國小的方式幫忙）。`
-        : "我想把事情弄懂。";
-      return [
-        "請用國小聽得懂的話跟我說話。",
-        "我是國小學生。",
-        want,
-        note ? `我還想說：${note}` : "請用短句子。",
-        keywords ? `請做到：${keywords}。` : "",
-        "請一步一步說，一次不要說太多。",
-        "如果要出題，先只要很少題。",
-        "不要問我真實姓名或成績。",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    if (complexity === "advanced") {
-      return [
-        `你是協助${levelLabel(level, locale)}${roleLabel(role, locale)}的專業教學／學習助手。`,
-        `任務類型：${need.task ?? "一般學習支援"}。`,
-        note ? `需求說明：${note}` : "",
-        keywords ? `約束條件：${keywords}` : "",
-        "請先給結構化大綱，再產出完整內容。",
-        "標明假設、限制與可驗證的下一步。",
-        "避免捏造來源；需要引用時請標示「待查證」。",
-        "嚴禁處理真實姓名、成績或其他個資。",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
     return [
-      `你是一位服務於${levelLabel(level, locale)}的AI助理，使用者身分是${roleLabel(role, locale)}。`,
-      `主要任務：${need.task ?? "學習／教學支援"}。`,
-      note ? `補充需求：${note}` : "",
-      keywords ? `請納入：${keywords}。` : "",
-      "請用清楚結構產出，並附上簡短使用說明。",
-      "內容需符合學段難度，避免不適合的素材。",
-      "請勿要求或生成真實個人資料。",
+      roleContext(need),
+      "",
+      "【想完成的事情】",
+      `任務：${task}`,
+      details ? `補充：${details}` : "",
+      preferences.length ? `希望包含：${preferences.join("；")}` : "",
+      "請依目前資訊產出第一版，讓我可以直接查看、修改並繼續完善。",
     ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  if (role === "student" && level === "elementary") {
-    return [
-      "Please talk to me with easy words a child can understand.",
-      "I am an elementary student.",
-      need.task ? `I want help with: ${need.task}.` : "I want to understand better.",
-      note ? `Also: ${note}` : "Use short sentences.",
-      keywords ? `Please include: ${keywords}.` : "",
-      "Go step by step. Do not say too much at once.",
-      "If you give practice questions, only a few.",
-      "Do not ask for real names or grades.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  if (complexity === "advanced") {
-    return [
-      `You are a professional assistant for a ${levelLabel(level, locale)} ${roleLabel(role, locale)}.`,
-      `Task type: ${need.task ?? "general academic support"}.`,
-      note ? `Request: ${note}` : "",
-      keywords ? `Constraints: ${keywords}` : "",
-      "Start with a structured outline, then full content.",
-      "State assumptions, limits, and verifiable next steps.",
-      "Do not invent sources; mark uncertain claims as unverified.",
-      "Never process real names, grades, or other personal data.",
-    ]
-      .filter(Boolean)
+      .filter((line, index) => line || index === 1)
       .join("\n");
   }
 
   return [
-    `You are an AI assistant for ${levelLabel(level, locale)}, helping a ${roleLabel(role, locale)}.`,
-    `Main task: ${need.task ?? "learning/teaching support"}.`,
-    note ? `Extra needs: ${note}` : "",
-    keywords ? `Please include: ${keywords}.` : "",
-    "Use a clear structure and a short how-to.",
-    "Match the difficulty to this education stage.",
-    "Do not request or generate real personal data.",
+    roleContext(need),
+    "",
+    "[WHAT I WANT TO CREATE]",
+    `Task: ${task}`,
+    details ? `Additional context: ${details}` : "",
+    preferences.length ? `Please include: ${preferences.join("; ")}` : "",
+    "Create a first version from the information currently available so I can review, edit, and continue improving it.",
   ]
-    .filter(Boolean)
+    .filter((line, index) => line || index === 1)
     .join("\n");
 }
