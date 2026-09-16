@@ -40,6 +40,7 @@
     "otherHint": "Say what you want in one sentence (goes into the prompt; ranking still uses role/office)"
   },
   "hub": {
+    "forum": {"title": "AI Forum", "audience": "Teachers", "action": "Open forum"},
     "eyebrow": "Kang Chiao AI Tools",
     "title": "What would you like to do?",
     "subtitle": "Choose a tool to begin.",

@@ -155,6 +155,17 @@ export function NavigatorApp() {
                 variant: "dark",
                 onClick: () => setMode("kuse"),
               },
+              {
+                id: "forum",
+                index: "03",
+                monogram: "Q",
+                title: t.hub.forum.title,
+                description: "",
+                audience: t.hub.forum.audience,
+                action: t.hub.forum.action,
+                variant: "mint",
+                onClick: () => { window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/forum/`; },
+              },
             ]}
           />
         ) : null}

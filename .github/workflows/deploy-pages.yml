@@ -31,6 +31,8 @@ jobs:
         run: npm ci
       - name: Build static site
         run: npm run build
+        env:
+          NEXT_PUBLIC_FORUM_API_URL: https://kcis-ai-forum-api.chaos60649.workers.dev
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

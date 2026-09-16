@@ -89,7 +89,7 @@ function FeatureCard({
       <span className="kc-feature-monogram" aria-hidden>{monogram}</span>
       <span className="kc-feature-copy">
         <strong>{title}</strong>
-        <span>{description}</span>
+        {description && <span>{description}</span>}
       </span>
       <span className="kc-feature-action">
         {action}

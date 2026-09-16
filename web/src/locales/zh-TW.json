@@ -40,6 +40,7 @@
     "otherHint": "用一句話說你想做什麼（會寫進提示詞；推薦仍依身分與單位）"
   },
   "hub": {
+    "forum": {"title": "AI 論壇", "audience": "老師", "action": "進入論壇"},
     "eyebrow": "康橋 AI 工具站",
     "title": "今天想使用哪個功能？",
     "subtitle": "選一個功能開始。",
