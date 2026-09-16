@@ -3,8 +3,25 @@
   "main": "src/worker.mjs",
   "compatibility_date": "2026-09-16",
   "workers_dev": true,
-  "observability": { "enabled": false },
-  "vars": { "ALLOWED_ORIGIN": "https://ai-tools.kcis.kainnne.com" },
-  "d1_databases": [{"binding":"DB","database_name":"kcis-ai-forum","database_id":"936979fb-a594-4d3b-bbe4-ad744e974202"}],
-  "triggers": { "crons": ["17 19 * * *"] }
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://ai-tools.kcis.kainnne.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kcis-ai-forum",
+      "database_id": "936979fb-a594-4d3b-bbe4-ad744e974202"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "17 19 * * *"
+    ]
+  },
+  "ai": {
+    "binding": "AI"
+  }
 }
