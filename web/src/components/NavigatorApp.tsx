@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ADMIN_DEPARTMENTS,
   getComplexity,
@@ -44,6 +44,8 @@ function progressSteps(role: Role | null): WizardStep[] {
 export function NavigatorApp() {
   const { t, locale } = useI18n();
   const reduce = useReducedMotion();
+  const [wikiUrl,setWikiUrl]=useState(process.env.NEXT_PUBLIC_WIKINB_URL || "https://wikinb.kcis.kainnne.com/");
+  useEffect(()=>{if(!process.env.NEXT_PUBLIC_WIKINB_URL&&["localhost","127.0.0.1"].includes(location.hostname))setWikiUrl(`http://${location.hostname}:4322/`);},[]);
   const [mode, setMode] = useState<"hub" | "navigator" | "kuse">("hub");
   const [step, setStep] = useState<WizardStep>("welcome");
   const [need, setNeed] = useState<UserNeed>(() => initialNeed(locale));
@@ -175,7 +177,7 @@ export function NavigatorApp() {
                 audience: t.hub.wikinb.audience,
                 action: t.hub.wikinb.action,
                 variant: "purple",
-                href: process.env.NEXT_PUBLIC_WIKINB_URL || "https://wikinb.kcis.kainnne.com/",
+                href: wikiUrl,
               },
             ]}
           />

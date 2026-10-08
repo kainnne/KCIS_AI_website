@@ -1,5 +1,6 @@
 "use client";
 
+import { SchoolLogin } from "./SchoolLogin";
 import Image from "next/image";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
@@ -35,7 +36,7 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
         <strong>{t.nav.home}</strong>
       </Link>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2"><SchoolLogin />
         <div className="kc-language-switch" role="group" aria-label="Site language">
           <button
             type="button"
