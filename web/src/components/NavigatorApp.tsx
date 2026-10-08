@@ -166,6 +166,17 @@ export function NavigatorApp() {
                 variant: "mint",
                 onClick: () => { window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/forum/`; },
               },
+              {
+                id: "wikinb",
+                index: "04",
+                monogram: "W",
+                title: t.hub.wikinb.title,
+                description: "",
+                audience: t.hub.wikinb.audience,
+                action: t.hub.wikinb.action,
+                variant: "purple",
+                href: process.env.NEXT_PUBLIC_WIKINB_URL || "https://wikinb.kcis.kainnne.com/",
+              },
             ]}
           />
         ) : null}

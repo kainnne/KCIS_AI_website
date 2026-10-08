@@ -10,8 +10,9 @@ export type FeatureHubItem = {
   description: string;
   audience: string;
   action: string;
-  variant: "light" | "dark" | "mint";
-  onClick: () => void;
+  variant: "light" | "dark" | "mint" | "purple";
+  onClick?: () => void;
+  href?: string;
 };
 
 export function FeatureHub({
@@ -60,6 +61,7 @@ function FeatureCard({
   audience,
   action,
   onClick,
+  href,
   reduce,
   variant,
 }: {
@@ -69,18 +71,12 @@ function FeatureCard({
   description: string;
   audience: string;
   action: string;
-  onClick: () => void;
+  onClick?: () => void;
+  href?: string;
   reduce: boolean;
   variant: FeatureHubItem["variant"];
 }) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      whileHover={reduce ? undefined : { y: -10, scale: 1.012 }}
-      whileTap={reduce ? undefined : { scale: 0.985 }}
-      className={`kc-feature-card kc-feature-${variant}`}
-    >
+  const content = <>
       <span className="kc-feature-glow" aria-hidden />
       <span className="kc-feature-topline">
         <span>{index}</span>
@@ -95,6 +91,13 @@ function FeatureCard({
         {action}
         <span aria-hidden>↗</span>
       </span>
-    </motion.button>
-  );
+  </>;
+  const feedback = {
+    whileHover: reduce ? undefined : { y: -10, scale: 1.012 },
+    whileTap: reduce ? undefined : { scale: 0.985 },
+    className: `kc-feature-card kc-feature-${variant}`,
+  };
+  return href
+    ? <motion.a href={href} {...feedback}>{content}</motion.a>
+    : <motion.button type="button" onClick={onClick} {...feedback}>{content}</motion.button>;
 }
