@@ -36,7 +36,7 @@ export function SchoolLogin(){
   async function submit(){
     setBusy(true);setError('');try{
       if(view==='logout'){await schoolRequest('logout',{});clearSchoolSession();setView(null);setNotice(t('已登出','Signed out'));}
-      else if(view==='account'){await schoolRequest('nickname',{nickname:nickname.trim()},'PATCH');await refreshSchoolSession(true);sessionChanged();setView(null);setNotice(t('暱稱已更新','Display name updated'));const destination=returnDestination();if(destination)location.assign(destination);}
+      else if(view==='account'){await schoolRequest('nickname',{nickname:nickname.trim()},'PATCH');await refreshSchoolSession(true);sessionChanged();setView(null);setNotice(t('暱稱已更新','Display name updated'));const query=new URLSearchParams(location.search);['account','signin','returnTo'].forEach(key=>query.delete(key));history.replaceState(null,'',location.pathname+(query.size?'?'+query:'')+location.hash);}
       else if(step==='email'){const normalized=email.trim().toLowerCase();await schoolRequest('send-code',{email:normalized,purpose:'login'});setEmail(normalized);setCode('');setStep('code');}
       else if(step==='code'){const check=await schoolRequest('verify-code',{email,code,purpose:'login'});if(check.needsNickname){setNickname('');setStep('nickname');}else{await schoolRequest('login-with-code',{email,code,purpose:'login'});await finishLogin();}}
       else{await schoolRequest('complete-setup',{email,code,nickname:nickname.trim(),purpose:'login'});await finishLogin();}
