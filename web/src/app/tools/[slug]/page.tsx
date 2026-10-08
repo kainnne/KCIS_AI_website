@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DecorBackground } from "@/components/DecorBackground";
+import { SchoolLogin } from "@/components/SchoolLogin";
 import { getAllToolsIncludingDeprecated, getToolBySlug } from "@/lib/tools";
 
 export function generateStaticParams() {
@@ -23,9 +24,10 @@ export default async function ToolPage({
     <div className="kc-shell">
       <DecorBackground />
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-        <Link href="/" className="kc-btn-ghost">
+        <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/" className="kc-btn-ghost">
           ← 回到導航 / Back
         </Link>
+        <SchoolLogin /></div>
 
         <article className="kc-card mt-6 p-5 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-wide text-kc-purple">
