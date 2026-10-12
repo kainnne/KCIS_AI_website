@@ -11,8 +11,8 @@ function returnDestination(){
 }
 export function SchoolLogin(){
   const {locale}=useI18n(),t=(zh:string,en:string)=>locale==='en'?en:zh;
-  const {session,ready,error:sessionError}=useSchoolSession(),dialog=useRef<HTMLDialogElement>(null),openedFromLink=useRef(false);
-  const [view,setView]=useState<'login'|'account'|'logout'|null>(null),[step,setStep]=useState<'email'|'code'|'nickname'>('email');
+  const {session,ready,error:sessionError}=useSchoolSession(),dialog=useRef<HTMLDialogElement>(null),openedFromLink=useRef(false),composing=useRef(false);
+  const [view,setView]=useState<'login'|'account'|'logout'|null>(null),[step,setStep]=useState<'email'|'code'>('email');
   const [email,setEmail]=useState(''),[code,setCode]=useState(''),[nickname,setNickname]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   useEffect(()=>{if(view)dialog.current?.showModal();else dialog.current?.close();},[view]);
   useEffect(()=>{
@@ -34,12 +34,12 @@ export function SchoolLogin(){
     sessionChanged();setView(null);setCode('');setNotice(t('已登入','Signed in'));const destination=returnDestination();if(destination)location.assign(destination);
   }
   async function submit(){
+    if(composing.current)return;
     setBusy(true);setError('');try{
       if(view==='logout'){await schoolRequest('logout',{});clearSchoolSession();setView(null);setNotice(t('已登出','Signed out'));}
       else if(view==='account'){await schoolRequest('nickname',{nickname:nickname.trim()},'PATCH');await refreshSchoolSession(true);sessionChanged();setView(null);setNotice(t('暱稱已更新','Display name updated'));const query=new URLSearchParams(location.search);['account','signin','returnTo'].forEach(key=>query.delete(key));history.replaceState(null,'',location.pathname+(query.size?'?'+query:'')+location.hash);}
       else if(step==='email'){const normalized=email.trim().toLowerCase();await schoolRequest('send-code',{email:normalized,purpose:'login'});setEmail(normalized);setCode('');setStep('code');}
-      else if(step==='code'){const check=await schoolRequest('verify-code',{email,code,purpose:'login'});if(check.needsNickname){setNickname('');setStep('nickname');}else{await schoolRequest('login-with-code',{email,code,purpose:'login'});await finishLogin();}}
-      else{await schoolRequest('complete-setup',{email,code,nickname:nickname.trim(),purpose:'login'});await finishLogin();}
+      else{await schoolRequest('login-with-code',{email,code,purpose:'login'});await finishLogin();}
     }catch(e){setError(e instanceof Error?e.message:t('連線失敗','Connection failed.'));}finally{setBusy(false);}
   }
   const account=view==='account',logout=view==='logout';
@@ -48,10 +48,10 @@ export function SchoolLogin(){
     {(notice||sessionError)&&<span className="kc-auth-status" role="status">{notice||sessionError}</span>}
     <dialog ref={dialog} className="kc-login-dialog" aria-labelledby="kc-login-title" onCancel={e=>{if(busy)e.preventDefault();else close();}} onClose={()=>{if(!busy)setView(null);}}>
       <button type="button" className="kc-login-close" disabled={busy} aria-label={t('關閉','Close')} onClick={close}>×</button>
-      <h2 id="kc-login-title">{logout?t('確定登出？','Sign out?'):account?t('帳號','Account'):step==='nickname'?t('設定暱稱','Set display name'):t('校內登入','School sign-in')}</h2>
+      <h2 id="kc-login-title">{logout?t('確定登出？','Sign out?'):account?t('帳號','Account'):t('校內登入','School sign-in')}</h2>
       {account&&<p className="kc-account-email">{session?.user.email}</p>}
       <form onSubmit={e=>{e.preventDefault();void submit();}}>
-        {!logout&&(account||step==='nickname'?<label>{t('暱稱','Display name')}<input key="nickname" value={nickname} autoComplete="nickname" minLength={2} maxLength={20} onChange={e=>setNickname(e.target.value)} required autoFocus /><small>{t('2–20 字：中文、英文、_ 或 .','2–20 characters: Chinese, English, _ or .')}</small></label>:step==='email'?<label>{t('校內信箱','School email')}<input key="email" type="email" value={email} autoComplete="email" onChange={e=>setEmail(e.target.value)} required autoFocus /></label>:<label>{t('信箱驗證碼','Email verification code')}<input key="code" value={code} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} onChange={e=>setCode(e.target.value)} required autoFocus /><small>{email}</small></label>)}
+        {!logout&&(account?<label>{t('暱稱','Display name')}<input key="nickname" value={nickname} autoComplete="nickname" minLength={2} maxLength={20} onChange={e=>setNickname(e.target.value)} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&(composing.current||e.nativeEvent.isComposing||e.keyCode===229))e.preventDefault();}} required autoFocus /><small>{t('2–20 字：中文、英文、數字、_ 或 .；不可重複','2–20 characters: Chinese, English, digits, _ or . Unique across all accounts.')}</small></label>:step==='email'?<label>{t('校內信箱','School email')}<input key="email" type="email" value={email} autoComplete="email" onChange={e=>setEmail(e.target.value)} required autoFocus /></label>:<label>{t('信箱驗證碼','Email verification code')}<input key="code" value={code} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} onChange={e=>setCode(e.target.value)} required autoFocus /><small>{email}</small></label>)}
         {error&&<p role="alert">{error}</p>}
         <button className="kc-signin" disabled={busy}>{busy?t('處理中…','Please wait…'):logout?t('登出','Sign out'):account?t('儲存','Save'):step==='email'?t('寄送驗證碼','Send code'):t('確認','Continue')}</button>
         {logout&&<button type="button" className="kc-auth-secondary" disabled={busy} onClick={openAccount}>{t('取消','Cancel')}</button>}

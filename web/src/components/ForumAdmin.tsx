@@ -13,6 +13,7 @@ type Props = {apiBase:string;locale:Locale;session:AdminSession;onClose:()=>void
 
 export function ForumAdmin({apiBase,locale,session,onClose,onExpired}:Props){
   const t=(zh:string,en:string)=>locale==='en'?en:zh;
+  const [articles,setArticles]=useState<(Post & {title:string})[]>([]);
   const [questions,setQuestions]=useState<Post[]>([]),[thread,setThread]=useState<Post|null>(null),[replies,setReplies]=useState<Post[]>([]);
   const [filter,setFilter]=useState('active'),[page,setPage]=useState(0),[loaded,setLoaded]=useState(false),[more,setMore]=useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -37,6 +38,7 @@ export function ForumAdmin({apiBase,locale,session,onClose,onExpired}:Props){
     request('/questions?filter='+filter+'&offset='+page*30).then(data=>{if(active){setQuestions(data.questions);setLoaded(true);}}).catch(reason=>{if(active)setError(reason instanceof Error?reason.message:'unavailable');});
     return()=>{active=false;};
   },[filter,page,request]);
+  useEffect(()=>{let active=true;request('/articles').then(data=>{if(active)setArticles(data.articles);}).catch(()=>{});return()=>{active=false;};},[request]);
   useEffect(()=>{let active=true;request('/backup-status').then(data=>{if(active)setBackup(data);}).catch(()=>{});return()=>{active=false;};},[request]);
   async function run(action:()=>Promise<void>){
     if(lock.current)return;lock.current=true;setBusy(true);setError('');
@@ -63,6 +65,8 @@ export function ForumAdmin({apiBase,locale,session,onClose,onExpired}:Props){
   return <section aria-label={t('論壇管理','Forum management')} aria-busy={busy}>
     <div className={styles.pageHeading}><h1>{t('論壇管理','Forum management')}</h1><button disabled={busy} onClick={onClose}>{t('返回論壇','Back to forum')}</button></div>
     {backup&&<p className={styles.backupStatus} role="status">{t('資料庫留存','Retained in database')} {backup.retained_versions} {t('版','versions')} · {backup.drive_configured?<>{t('Drive 已同步','Drive synced')} {backup.synced} · {t('待同步','Pending')} {backup.pending}{backup.failed>0&&<> · {t('需重試','Needs retry')} {backup.failed}</>}</>:t('Drive 未接入','Drive not connected')}</p>}
+    {articles.length>0&&<section className={styles.questionsPanel} aria-label={t('文章管理','Article management')}><h2 className={styles.articleTitle}>{t('AI 文章','AI articles')}</h2>{articles.map(article=><article className={styles.row} key={article.id}><div className={styles.questionContent}><h3>{article.title}</h3>{metadata(article)}</div><button className={styles.danger} disabled={busy} onClick={()=>{if(!window.confirm(article.deleted_at?t('復原這篇文章？','Restore this article?'):t('刪除這篇文章？紀錄會保留。','Delete this article? Its history will be retained.')))return;void run(async()=>{await request('/articles/'+article.id+'/moderate','POST',{version:article.version,action:article.deleted_at?'restore':'hide'});setArticles((await request('/articles')).articles);});}}>{article.deleted_at?t('復原','Restore'):t('刪除','Delete')}</button></article>)}</section>}
+
     {error&&<div className={styles.error} role="alert"><span>{error==='admin_auth'?t('管理權限已到期，請重新進入論壇','Management session expired. Enter the forum again.'):error==='conflict'?t('內容已變更，請重新載入','Content changed. Reload to continue.'):error==='rate'?t('操作次數已達上限，請稍後再試','Request limit reached. Try again later.'):t('連線失敗，請重試','Connection failed. Try again.')}</span><button disabled={busy} onClick={()=>error==='admin_auth'?onExpired():void run(async()=>{if(thread)await openThread(thread.id);await loadQuestions();})}>{error==='admin_auth'?t('重新進入','Enter again'):t('重新載入','Reload')}</button></div>}
     {confirm&&<div ref={confirmationRef} tabIndex={-1} className={styles.moderationConfirm} role="alertdialog" aria-labelledby="moderation-title" aria-describedby="moderation-description">
       <form onSubmit={event=>submit(event,()=>moderate(confirm.post,confirm.kind,'hide'))}>

@@ -1,0 +1,15 @@
+{
+  "name": "kcis-forum-api",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "node dev.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.146.0"
+  }
+}

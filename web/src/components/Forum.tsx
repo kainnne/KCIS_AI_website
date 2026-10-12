@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useI18n } from '@/lib/i18n';
 import styles from './Forum.module.css';
-import { ForumPostText, type TranslatablePost } from './ForumPostText';
+import { ForumPostText } from './ForumPostText';
 import { ForumAdmin, type AdminSession } from './ForumAdmin';
 import { SchoolLogin } from './SchoolLogin';
 import { useSchoolSession } from '@/lib/shared-auth';
-import type { Locale } from '@/lib/types';
 
 type Post = { id:string; body:string; name:string; department:string; mine:boolean; created_at:number; updated_at:number; deleted_at:number|null; version:number; reply_count?:number; resolved?:number; solution_method?:string; solution_steps?:string; solution_result?:string };
 type Kind = 'questions'|'replies';
@@ -24,7 +23,8 @@ const errors:Record<string,[string,string]> = {
   missing:['內容已刪除或不存在','This post was deleted or could not be found.'],
   conflict:['內容已變更，請重新載入','This post has changed. Reload to continue.'],
   rate:['操作次數已達上限，請稍後再試','Request limit reached. Try again later.'],
-  translation:['翻譯暫時無法使用，請稍後再試','Translation unavailable. Try again later.'],
+  teacher:['只有教職員能分享文章','Only staff can share articles.'],
+  article_length:['文章須為 1–20,000 字','Articles must be 1–20,000 characters.'],
   unavailable:['連線失敗，請重試','Connection failed. Try again.']
 };
 
@@ -42,6 +42,13 @@ export function Forum() {
   const [thread,setThread]=useState<Post|null>(null),[replies,setReplies]=useState<Post[]>([]),[moreReplies,setMoreReplies]=useState(false);
   const [draft,setDraft]=useState(''),[replyDraft,setReplyDraft]=useState('');
   const [composing,setComposing]=useState(false);
+  const [view,setView]=useState<'questions'|'articles'>('questions');
+  const [articles,setArticles]=useState<(Post & {title:string})[]>([]),[sharing,setSharing]=useState(false),[articleTitle,setArticleTitle]=useState(''),[articleBody,setArticleBody]=useState(''),[articlesLoaded,setArticlesLoaded]=useState(false);
+  const articleKey=useRef('');
+  const canShare=!!session&&['teacher','admin'].includes(session.user.role);
+  async function loadArticles(){const data=await api('/articles?offset='+page*30);setArticles(data.articles);setArticlesLoaded(true);}
+
+
   const [edit,setEdit]=useState<{post:Post;kind:Kind}|null>(null),[editBody,setEditBody]=useState('');
   const questionKey=useRef(''),replyKey=useRef('');
   const questionInput=useRef<HTMLTextAreaElement>(null),threadArticle=useRef<HTMLElement>(null),askButton=useRef<HTMLButtonElement>(null);
@@ -71,7 +78,8 @@ export function Forum() {
     const response=await fetch(API+'/api'+path,{method,headers:{...(body!==undefined?{'Content-Type':'application/json'}:{}),...((accountToken.current||token.current)?{Authorization:'Bearer '+(accountToken.current||token.current)}:{})},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal});
     const data=await response.json();if(!response.ok)throw Error(data.error||'unavailable');return data;
   },[]);
-  const translatePost=useCallback((post:TranslatablePost,kind:Kind,target:Locale)=>api('/'+kind+'/'+post.id+'/translate','POST',{target},AbortSignal.timeout(35000)),[api]);
+
+  useEffect(()=>{if(!entered||!sessionReady||view!=='articles')return;let active=true;setArticlesLoaded(false);api('/articles?offset='+page*30).then(data=>{if(active){setArticles(data.articles);setArticlesLoaded(true);}}).catch(()=>{if(active)setError('unavailable');});return()=>{active=false;};},[entered,sessionReady,view,page,api,session?.token]);
   async function run(action:()=>Promise<void>){
     if(lock.current)return;lock.current=true;setBusy(true);setError('');
     try{await action();}catch(e){setError(e instanceof Error&&errors[e.message]?e.message:'unavailable');}finally{lock.current=false;setBusy(false);}
@@ -90,13 +98,13 @@ export function Forum() {
     // The selected language does not change the posts being requested.
   },[entered,filter,page,api,sessionReady,session?.token]);
   useEffect(()=>{
-    function warn(e:BeforeUnloadEvent){if(draft||replyDraft||edit)e.preventDefault();}
+    function warn(e:BeforeUnloadEvent){if(draft||replyDraft||edit||articleBody||articleTitle)e.preventDefault();}
     window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);
-  },[draft,replyDraft,edit]);
+  },[draft,replyDraft,edit,articleBody,articleTitle]);
   const time=(n:number)=>new Intl.DateTimeFormat(locale==='en'?'en':'zh-TW',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(n);
   function submit(e:FormEvent,action:()=>Promise<void>){e.preventDefault();void run(action);}
   function postBody(post:Post,kind:Kind){
-    return <ForumPostText post={post} kind={kind} locale={locale} request={translatePost} actions={post.mine&&!post.deleted_at&&!post.resolved?<div className={styles.editActions}><button disabled={busy} onClick={()=>{setEdit({post,kind});setEditBody(post.body);}}>{t('編輯','Edit')}</button></div>:undefined} />;
+    return <ForumPostText post={post} locale={locale} actions={post.mine&&!post.deleted_at&&!post.resolved?<div className={styles.editActions}><button disabled={busy} onClick={()=>{setEdit({post,kind});setEditBody(post.body);}}>{t('編輯','Edit')}</button></div>:undefined} />;
   }
   function editor(post:Post,kind:Kind){
     return <form className={styles.editor} onSubmit={e=>submit(e,async()=>{await api('/'+kind+'/'+post.id,'PATCH',{body:editBody,version:post.version});setEdit(null);if(thread)await fetchThread(thread.id);await loadQuestions();})}>
@@ -142,9 +150,30 @@ export function Forum() {
       </section>:adminOpen&&adminSession?<ForumAdmin apiBase={API} locale={locale} session={adminSession} onExpired={expireAdmin} onClose={()=>void run(async()=>{setAdminOpen(false);setSolving(false);setThread(null);setReplies([]);setEdit(null);await loadQuestions();})} />:<>
         <div className={styles.pageHeading}>
           <h1>{t('AI 論壇','AI Forum')}</h1>
-          {!thread&&session&&<button ref={askButton} className={styles.primary} disabled={busy} aria-expanded={composing} aria-controls={composing?'question-composer':undefined} onClick={()=>{setComposing(true);questionInput.current?.focus();}}><Icon name="plus" />{t('提出問題','Ask a question')}</button>}
+          {!thread&&view==='questions'&&session&&<button ref={askButton} className={styles.primary} disabled={busy} aria-expanded={composing} aria-controls={composing?'question-composer':undefined} onClick={()=>{setComposing(true);questionInput.current?.focus();}}><Icon name="plus" />{t('提出問題','Ask a question')}</button>}
         </div>
-        {thread?<>
+        {!thread&&<nav className={styles.tabs} aria-label={t('論壇內容','Forum content')}>
+          <button aria-pressed={view==='questions'} onClick={()=>{setView('questions');setPage(0);}}>{t('問題','Questions')}</button>
+          <button aria-pressed={view==='articles'} onClick={()=>{setView('articles');setPage(0);}}>{t('AI 文章','AI articles')}</button>
+        </nav>}
+        {!thread&&view==='articles'?<>
+          {canShare&&<div className={styles.articleToolbar}><button className={styles.primary} disabled={busy} onClick={()=>setSharing(true)}>{t('分享文章','Share an article')}</button></div>}
+          {canShare&&sharing&&<form className={styles.compose} onSubmit={e=>submit(e,async()=>{
+            if(!articleKey.current)articleKey.current=crypto.randomUUID();
+            await api('/articles','POST',{id:articleKey.current,title:articleTitle,body:articleBody});
+            articleKey.current='';setArticleTitle('');setArticleBody('');setSharing(false);await loadArticles();
+          })}>
+            <label>{t('標題','Title')}<input value={articleTitle} onChange={e=>{setArticleTitle(e.target.value);articleKey.current='';}} maxLength={160} required /></label>
+            <label>{t('文章內容','Article')}<textarea value={articleBody} onChange={e=>{setArticleBody(e.target.value);articleKey.current='';}} maxLength={20000} required placeholder={t('貼上 AI 文章…','Paste your AI article…')} /></label>
+            <div className={styles.composeFooter}><span className={styles.characterCount}>{articleBody.length.toLocaleString()} / 20,000</span><div className={styles.actions}><button type="button" onClick={()=>{if((articleBody||articleTitle)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setSharing(false);setArticleTitle('');setArticleBody('');articleKey.current='';}}>{t('取消','Cancel')}</button><button className={styles.primary} disabled={busy||!articleTitle.trim()||!articleBody.trim()}>{t('發布並同步 WikiNB','Publish & sync WikiNB')}</button></div></div>
+          </form>}
+          {!articlesLoaded?<p className={styles.empty} role="status">{t('載入中…','Loading…')}</p>:articles.length===0?<p className={styles.empty}>{t('尚無文章','No articles')}</p>:articles.map(article=><article className={styles.post} key={article.id}>
+            <h2 className={styles.articleTitle}>{article.title}</h2><div className={styles.meta}><span>{article.name}</span><time dateTime={new Date(article.created_at).toISOString()}>{time(article.created_at)}</time></div>
+            <p className={styles.articlePreview}>{article.body.replace(/^# [^\n]+\n+/,'').slice(0,180)}{article.body.length>180?'…':''}</p><details className={styles.articleDetails}><summary>{t('閱讀全文','Read article')}</summary><p className={styles.body}>{article.body}</p></details>
+            {session?.admin&&<button className={styles.resolveButton} disabled={busy} onClick={()=>{if(!window.confirm(t('刪除這篇文章？後台會保留紀錄。','Delete this article? Its history will be retained.')))return;void run(async()=>{await api('/admin/articles/'+article.id+'/moderate','POST',{version:article.version,action:'hide'});await loadArticles();});}}>{t('刪除','Delete')}</button>}
+          </article>)}
+          {(page>0||articles.length===30)&&<nav className={styles.pagination}>{page>0&&<button onClick={()=>setPage(p=>p-1)}>{t('上一頁','Previous')}</button>}{articles.length===30&&<button onClick={()=>setPage(p=>p+1)}>{t('下一頁','Next')}</button>}</nav>}
+        </>:thread?<>
           <nav className={styles.backNav} aria-label={t('論壇導覽','Forum navigation')}><button disabled={busy} onClick={()=>void run(backToQuestions)}><Icon name="back" />{t('所有問題','All questions')}</button></nav>
           <article className={styles.post} ref={threadArticle} tabIndex={-1} aria-label={t('問題內容','Question')}>
             {byline(thread)}
@@ -184,7 +213,7 @@ export function Forum() {
               {!loaded?<p role="status" className={styles.empty}>{error?t('無法載入問題','Could not load questions'):t('載入中…','Loading…')}</p>:questions.length===0?<div className={styles.empty}><Icon name="message" /><p>{t('尚無問題','No questions')}</p></div>:questions.map(q=><article className={styles.row} key={q.id}>
                 <button disabled={busy} className={styles.question} onClick={()=>void run(()=>openThread(q.id))}>
                   <div className={styles.questionContent}>
-                    <ForumPostText post={q} kind="questions" locale={locale} preview request={translatePost} />
+                    <ForumPostText post={q} locale={locale} preview />
                     <div className={styles.meta}><span className={styles.author}>{q.name}</span><span>{q.department}</span><time dateTime={new Date(q.created_at).toISOString()}>{time(q.created_at)}</time></div>
                   </div>
                   <div className={styles.questionStatus}>{!!q.resolved&&<span className={styles.resolved}>{t('已解決','Resolved')}</span>}<span className={styles.replyCount}><Icon name="message" />{q.reply_count} {t('則回覆',q.reply_count===1?'reply':'replies')}</span></div>

@@ -7,7 +7,10 @@
     "enabled": false
   },
   "vars": {
-    "ALLOWED_ORIGIN": "https://ai-tools.kcis.kainnne.com"
+    "ALLOWED_ORIGIN": "https://ai-tools.kcis.kainnne.com",
+    "WIKINB_API_URL": "https://transition-desired-blocks-webster.trycloudflare.com",
+    "ALLOWED_EMAIL_DOMAINS": "kcis.com.tw,kcis.ntpc.edu.tw",
+    "EXTRA_ALLOWED_EMAILS": "chaos60649@gmail.com,st101031616@gmail.com"
   },
   "d1_databases": [
     {
@@ -18,10 +21,8 @@
   ],
   "triggers": {
     "crons": [
+      "*/5 * * * *",
       "17 19 * * *"
     ]
-  },
-  "ai": {
-    "binding": "AI"
   }
 }
