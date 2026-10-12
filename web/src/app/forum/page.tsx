@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { Forum } from '@/components/Forum';
 
 export const metadata: Metadata = {
-  title: '康橋 AI 論壇',
-  description: '康橋教師 AI 使用問答與討論。',
+  title: 'KCIS AI Forum',
+  description: 'AI questions and articles for KCIS staff and students.',
   robots: { index: false, follow: false },
 };
 

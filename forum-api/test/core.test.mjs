@@ -10,7 +10,7 @@ import { backupStatus, syncDriveBackups } from '../src/drive-backup.mjs';
 
 function fixture() {
   const sql=new DatabaseSync(':memory:');
-  for(const file of ['0001_forum.sql','0002_public_forum.sql','0003_translation_jobs.sql','0004_post_archive.sql','0005_solutions.sql','0006_solution_moderation.sql','0007_articles.sql','0008_solution_roles.sql'])sql.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
+  for(const file of ['0001_forum.sql','0002_public_forum.sql','0003_translation_jobs.sql','0004_post_archive.sql','0005_solutions.sql','0006_solution_moderation.sql','0007_articles.sql','0008_solution_roles.sql','0009_account_profiles.sql'])sql.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
   function prepare(query){let args=[];return {bind(...values){args=values;return this;},async first(){return sql.prepare(query).get(...args)||null;},async all(){return {results:sql.prepare(query).all(...args)};},async run(){return sql.prepare(query).run(...args);}};}
   const inferences=[];
   const env={SESSION_SECRET:'s'.repeat(64),ADMIN_NAME:'Test moderator',ADMIN_DEPARTMENT:'IT',ADMIN_SESSION_SECRET:'s'.repeat(64),DB:{prepare,async batch(statements){sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}},ALLOWED_ORIGIN:'https://ai-tools.kcis.kainnne.com',AI:{async run(model,input){inferences.push({model,input});return {response:'How do I use AI?'};}}};
@@ -19,7 +19,7 @@ function fixture() {
     const response=await handler(new Request('https://api.example.test/api'+path,{method,headers:{Origin:origin,...(body!==undefined?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{}),...(admin?{'X-Forum-Admin':admin}:{})},body:body===undefined?undefined:JSON.stringify(body)}),env);
     return {status:response.status,headers:response.headers,data:response.status===204?null:await response.json()};
   }
-  const sign=(email,exp=Math.floor(Date.now()/1000)+3600)=>{const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),b=Buffer.from(JSON.stringify({email,nickname:'測試姓名',role:(email==='st101031616@gmail.com'||/^[sj]\d{5}(?:$|[^a-z0-9])/i.test(email.split('@')[0]))?'student':'teacher',authType:'email-otp',exp})).toString('base64url');return h+'.'+b+'.'+createHmac('sha256',env.SESSION_SECRET).update(h+'.'+b).digest('base64url');};
+  const sign=(email,exp=Math.floor(Date.now()/1000)+3600,profile={})=>{const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),b=Buffer.from(JSON.stringify({email,nickname:'測試姓名',role:(email==='st101031616@gmail.com'||/^[sj]\d{5}(?:$|[^a-z0-9])/i.test(email.split('@')[0]))?'student':'teacher',authType:'email-otp',department:'英文科',updatedAt:new Date().toISOString(),...profile,exp})).toString('base64url');return h+'.'+b+'.'+createHmac('sha256',env.SESSION_SECRET).update(h+'.'+b).digest('base64url');};
   const token=sign('teacher@kcis.com.tw'),other=sign('other@kcis.com.tw'),adminToken=sign('kainnne@kcis.com.tw');
   const question={id:crypto.randomUUID(),body:'請問怎麼使用 AI？',name:'測試姓名',department:'英文科'};
   const create=()=>call('/questions',{method:'POST',body:question,token});
@@ -32,7 +32,8 @@ test('public reading, required identity, no login routes and exact CORS',async()
   assert.equal((await f.call('/auth/code',{method:'POST',body:{email:'a@example.test'}})).status,404);
   assert.equal((await f.call('/members')).status,404);
   assert.equal((await f.call('/questions',{origin:'https://evil.test'})).status,403);
-  for(const body of [{...f.question,department:''},{...f.question,department:'x\ny'}])assert.equal((await f.call('/questions',{method:'POST',body,token:f.token})).status,400);
+  for(const body of [{...f.question,department:''},{...f.question,department:'x\ny'}])assert.equal((await f.call('/questions',{method:'POST',body,token:f.token})).status,201);
+  assert.equal((await f.call('/questions',{method:'POST',body:{...f.question,id:crypto.randomUUID()},token:f.sign('teacher@kcis.com.tw',undefined,{department:'x\ny'})})).status,400);
   assert.equal((await f.call('/questions',{method:'POST',body:f.question})).status,401);
   assert.equal((await f.create()).status,201);
   const view=await f.call('/questions');assert.equal(view.data.questions[0].department,'英文科');assert.equal(view.data.questions[0].mine,false);
@@ -319,4 +320,24 @@ test('article Drive snapshots retain full Markdown, title, author and admin dele
  assert.equal(snapshots[0].title,'AI article title');assert.match(snapshots[0].markdown,/Complete article text/);assert.equal(snapshots[0].author,'測試姓名');assert.ok(snapshots[1].deleted_at);
  assert.ok(!JSON.stringify(snapshots).includes('owner_hash'));assert.ok(!JSON.stringify(snapshots).includes(f.env.SESSION_SECRET));
  assert.equal((await backupStatus(f.env)).synced,2);assert.equal((await backupStatus(f.env)).pending,0);f.sql.close();
+});
+
+
+test('account profile updates only owned current metadata, preserves archives, retries are idempotent and stale sessions cannot restore old names',async()=>{
+ const f=fixture();await f.create();const id=crypto.randomUUID();await f.call('/articles',{method:'POST',body:{id,title:'Complete lesson',body:'Original full body'},token:f.token});
+ await f.call('/questions/'+f.question.id+'/resolve',{method:'POST',body:{version:1,resolved:true,method:'Original method',steps:'Original steps',result:'Verified'},token:f.token});
+ const otherId=crypto.randomUUID();await f.call('/questions',{method:'POST',body:{...f.question,id:otherId},token:f.other});
+ const token=f.sign('teacher@kcis.com.tw',undefined,{nickname:'王_老師',department:'資源中心',updatedAt:'2030-01-01T00:00:00.000Z'});
+ assert.equal((await f.call('/account/profile',{method:'POST',body:{nickname:'Impersonator'},token})).status,200);
+ const latest=f.sql.prepare('SELECT * FROM public_questions WHERE id=?').get(f.question.id);assert.equal(latest.name,'王_老師');assert.equal(latest.department,'資源中心');assert.equal(latest.body,f.question.body);assert.equal(latest.resolved,1);
+ assert.equal(f.sql.prepare('SELECT name FROM public_questions WHERE id=?').get(otherId).name,'測試姓名');
+ assert.equal(f.sql.prepare('SELECT author FROM article_archive WHERE article_id=? AND version=1').get(id).author,'測試姓名');
+ assert.equal(f.sql.prepare('SELECT author FROM article_archive WHERE article_id=? AND version=2').get(id).author,'王_老師');
+ const count=f.sql.prepare('SELECT count(*) n FROM article_archive').get().n;
+ assert.equal((await f.call('/account/profile',{method:'POST',body:{},token})).data.duplicate,true);assert.equal(f.sql.prepare('SELECT count(*) n FROM article_archive').get().n,count);
+ assert.equal((await f.call('/account/profile',{method:'POST',body:{},token:f.token})).data.duplicate,true);
+ const next=crypto.randomUUID();await f.call('/questions',{method:'POST',body:{...f.question,id:next,name:'fake',department:'fake'},token:f.token});
+ assert.equal(f.sql.prepare('SELECT name FROM public_questions WHERE id=?').get(next).name,'王_老師');
+ assert.equal((await f.call('/account/profile',{method:'POST',body:{}})).status,401);
+ assert.ok(!JSON.stringify((await f.call('/articles')).data).includes('owner_hash'));f.sql.close();
 });

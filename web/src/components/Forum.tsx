@@ -1,18 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { useI18n } from '@/lib/i18n';
 import styles from './Forum.module.css';
 import { ForumPostText } from './ForumPostText';
 import { ForumAdmin, type AdminSession } from './ForumAdmin';
-import { SchoolLogin } from './SchoolLogin';
+import { SchoolLogin, type GuestProfile } from './SchoolLogin';
 import { useSchoolSession } from '@/lib/shared-auth';
 
 type Post = { id:string; body:string; name:string; department:string; mine:boolean; created_at:number; updated_at:number; deleted_at:number|null; version:number; reply_count?:number; resolved?:number; solution_method?:string; solution_steps?:string; solution_result?:string };
 type Kind = 'questions'|'replies';
 const API = process.env.NEXT_PUBLIC_FORUM_API_URL || '';
 const OWNER_KEY = 'kcis-forum-owner';
-const PROFILE_KEY = 'kcis-forum-profile';
 const errors:Record<string,[string,string]> = {
   auth:['請先驗證校內信箱登入','Sign in with your school email first.'],
   solution:['請填寫解決方法、操作步驟與驗證結果','Enter the solution, steps and verification result.'],
@@ -29,12 +27,13 @@ const errors:Record<string,[string,string]> = {
 };
 
 export function Forum() {
-  const {locale,toggleLocale}=useI18n();
+  const locale='en' as const;
   const {session,ready:sessionReady}=useSchoolSession();
   const accountToken=useRef('');accountToken.current=session?.token||'';
   const [solving,setSolving]=useState(false),[solutionMethod,setSolutionMethod]=useState(''),[solutionSteps,setSolutionSteps]=useState(''),[solutionResult,setSolutionResult]=useState('');
   const t=(zh:string,en:string)=>locale==='en'?en:zh;
-  const [entered,setEntered]=useState(false),[name,setName]=useState(''),[department,setDepartment]=useState('');
+  const [enteredGuest,setEnteredGuest]=useState(false),[guestProfile,setGuestProfile]=useState<GuestProfile|null>(null);const entered=!!session||enteredGuest;
+  const name=session?.user.nickname||session?.user.name||guestProfile?.name||'',department=session?.user.department||guestProfile?.department||'';
   const [adminSession,setAdminSession]=useState<AdminSession|null>(null),[adminOpen,setAdminOpen]=useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
   const lock=useRef(false),token=useRef('');
@@ -53,8 +52,8 @@ export function Forum() {
   const questionKey=useRef(''),replyKey=useRef('');
   const questionInput=useRef<HTMLTextAreaElement>(null),threadArticle=useRef<HTMLElement>(null),askButton=useRef<HTMLButtonElement>(null);
   const threadId=thread?.id;
-  useEffect(()=>{setAdminSession(session?.admin?{token:session.token,expires_at:Date.now()+3600000}:null);if(!session)setAdminOpen(false);if(session){setName(session.user.nickname||session.user.name);setEntered(true);}},[session]);
-  const expireAdmin=useCallback(()=>{setAdminSession(null);setAdminOpen(false);setEntered(false);},[]);
+  useEffect(()=>{setAdminSession(session?.admin?{token:session.token,expires_at:Date.now()+3600000}:null);if(!session)setAdminOpen(false);},[session]);
+  const expireAdmin=useCallback(()=>{setAdminSession(null);setAdminOpen(false);},[]);
 
   useEffect(()=>{
     if(!threadId)return;
@@ -64,8 +63,7 @@ export function Forum() {
 
   useEffect(()=>{
     try {
-      const profile=JSON.parse(sessionStorage.getItem(PROFILE_KEY)||'null');
-      if(profile&&typeof profile.name==='string'&&typeof profile.department==='string'){setName(profile.name);setDepartment(profile.department);}
+      const profile=JSON.parse(sessionStorage.getItem('kcis-forum-profile')||'null');if(profile?.name&&profile?.department)setGuestProfile(profile);
       token.current=localStorage.getItem(OWNER_KEY)||'';
     } catch { /* Storage is optional; the current visit still works. */ }
     if(!/^[a-f0-9]{64}$/.test(token.current)) {
@@ -79,7 +77,13 @@ export function Forum() {
     const data=await response.json();if(!response.ok)throw Error(data.error||'unavailable');return data;
   },[]);
 
-  useEffect(()=>{if(!entered||!sessionReady||view!=='articles')return;let active=true;setArticlesLoaded(false);api('/articles?offset='+page*30).then(data=>{if(active){setArticles(data.articles);setArticlesLoaded(true);}}).catch(()=>{if(active)setError('unavailable');});return()=>{active=false;};},[entered,sessionReady,view,page,api,session?.token]);
+  useEffect(()=>{
+    if(!threadId||!session)return;let active=true;
+    api('/questions/'+threadId).then(data=>{if(!active)return;setThread(data.question);setReplies(old=>old.map(row=>data.replies.find((fresh:Post)=>fresh.id===row.id)||row));setEdit(old=>{if(!old)return old;const post=old.kind==='questions'?data.question:data.replies.find((row:Post)=>row.id===old.post.id);return post?{...old,post}:old;});}).catch(()=>{});
+    return()=>{active=false;};
+  // Preserve composer text and focus while updating profile/version metadata.
+  },[api,threadId,session]);
+  useEffect(()=>{if(!entered||!sessionReady||view!=='articles')return;let active=true;api('/articles?offset='+page*30).then(data=>{if(active){setArticles(data.articles);setArticlesLoaded(true);}}).catch(()=>{if(active)setError('unavailable');});return()=>{active=false;};},[entered,sessionReady,view,page,api,session?.token]);
   async function run(action:()=>Promise<void>){
     if(lock.current)return;lock.current=true;setBusy(true);setError('');
     try{await action();}catch(e){setError(e instanceof Error&&errors[e.message]?e.message:'unavailable');}finally{lock.current=false;setBusy(false);}
@@ -92,7 +96,7 @@ export function Forum() {
   }
   useEffect(()=>{
     if(!entered||!sessionReady)return;
-    let active=true;setLoaded(false);
+    let active=true;
     api('/questions?filter='+filter+'&offset='+page*30).then(data=>{if(active){setQuestions(data.questions);setLoaded(true);}}).catch(()=>{if(active)setError('unavailable');});
     return()=>{active=false;};
     // The selected language does not change the posts being requested.
@@ -113,7 +117,7 @@ export function Forum() {
     </form>;
   }
   function byline(post:Post){return <div className={styles.meta}>
-    {!post.deleted_at&&<><span className={styles.author}>{post.name}</span><span>{post.department}</span></>}
+    {!post.deleted_at&&<><span className={styles.author}>{post.mine&&session?name:post.name}</span><span>{post.mine&&session?department:post.department}</span></>}
     <time dateTime={new Date(post.created_at).toISOString()}>{time(post.created_at)}</time>
     {!post.deleted_at&&post.updated_at>post.created_at&&<span>{t('已編輯','Edited')}</span>}
   </div>;}
@@ -127,25 +131,24 @@ export function Forum() {
     setSolving(false);setThread(null);setReplies([]);setEdit(null);setReplyDraft('');replyKey.current='';await loadQuestions();
   }
 
-  return <div className={styles.forum}>
+  return <div className={styles.forum} lang="en">
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <a className={styles.brand} href={(process.env.NEXT_PUBLIC_BASE_PATH||'')+'/'}><Icon name="back" /><span>康橋 AI Tools</span></a>
-        <div className={styles.headerActions}><SchoolLogin />
-          <button className={styles.locale} onClick={toggleLocale}><Icon name="language" />{locale==='en'?'中文':'English'}</button>
+        <a className={styles.brand} href={(process.env.NEXT_PUBLIC_BASE_PATH||'')+'/'}><Icon name="back" /><span>KCIS AI Tools</span></a>
+        <div className={styles.headerActions}><SchoolLogin allowGuest={enteredGuest} onGuestChange={profile=>{setGuestProfile(profile);if(!profile)setEnteredGuest(false);}} />
           {entered&&adminSession&&!adminOpen&&<button className={styles.locale} disabled={busy} onClick={()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}}>{t('管理','Manage')}</button>}
-          {entered&&<button className={styles.profile} disabled={busy} title={name+' · '+department} aria-label={t('修改姓名與部門','Change name and department')} onClick={expireAdmin}><span>{session?(department||t('所屬部門','Department')):name}{!session&&<span className={styles.profileDepartment}> · {department}</span>}</span><Icon name="chevron" /></button>}
+
         </div>
       </div>
     </header>
-    <main className={!entered?styles.entryWorkspace:thread?styles.threadWorkspace:styles.workspace} aria-busy={busy}>
+    <main className={!entered?styles.entryWorkspace:thread?styles.threadWorkspace:styles.workspace} aria-busy={busy||!sessionReady}>
       {error&&!adminOpen&&<div role="alert" className={styles.error}><span>{errors[error]?.[locale==='en'?1:0]||t(errors.unavailable[0],errors.unavailable[1])}</span><button disabled={busy} onClick={()=>void run(async()=>{if(entered){if(thread)await fetchThread(thread.id);else await loadQuestions();}})}>{t('重新載入','Reload')}</button></div>}
-      {!entered?<section className={styles.entry} aria-labelledby="forum-entry-title">
-        <div className={styles.entryHeading}><Icon name="message" /><h1 id="forum-entry-title">{t('AI 論壇','AI Forum')}</h1></div>
-        <form onSubmit={e=>submit(e,async()=>{if(!name.trim()||!department.trim())return;const profile={name:name.trim(),department:department.trim()};setName(profile.name);setDepartment(profile.department);setAdminSession(session?.admin?{token:session.token,expires_at:Date.now()+3600000}:null);setAdminOpen(false);try{sessionStorage.setItem(PROFILE_KEY,JSON.stringify(profile));}catch{/* Optional preference storage. */}setEntered(true);})}>
-          <div className={styles.field}><label htmlFor="forum-name">{t('姓名','Name')}</label><input id="forum-name" autoComplete="name" value={name} readOnly={!!session} onChange={e=>setName(e.target.value)} maxLength={60} disabled={busy} required /></div>
-          <div className={styles.field}><label htmlFor="forum-department">{t('所屬部門','Department')}</label><input id="forum-department" autoComplete="organization" placeholder={t('學務處、英文科…','Student Affairs, English Department…')} value={department} onChange={e=>setDepartment(e.target.value)} maxLength={80} disabled={busy} required /></div>
-          <button className={styles.primary} disabled={busy||!name.trim()||!department.trim()}><span>{t('以訪客身分進入','Enter as guest')}</span><Icon name="forward" /></button>
+      {!sessionReady?<p role="status" className={styles.empty}>Checking account…</p>:!entered?<section className={styles.entry} aria-labelledby="forum-entry-title">
+        <div className={styles.entryHeading}><Icon name="message" /><h1 id="forum-entry-title">AI Forum</h1></div>
+        <form onSubmit={e=>submit(e,async()=>{if(!name.trim()||!department.trim())return;const profile={name:name.trim(),department:department.trim()};setGuestProfile(profile);try{sessionStorage.setItem('kcis-forum-profile',JSON.stringify(profile));}catch{}setEnteredGuest(true);})}>
+          <div className={styles.field}><label htmlFor="forum-name">Name</label><input id="forum-name" autoComplete="name" value={name} onChange={e=>setGuestProfile({name:e.target.value,department:guestProfile?.department||''})} maxLength={60} disabled={busy} required /></div>
+          <div className={styles.field}><label htmlFor="forum-department">Department</label><input id="forum-department" autoComplete="organization" placeholder="Student Affairs, English Department…" value={department} onChange={e=>setGuestProfile({name:guestProfile?.name||'',department:e.target.value})} maxLength={40} disabled={busy} required /></div>
+          <button className={styles.primary} disabled={busy||!name.trim()||!department.trim()}><span>Enter as guest</span><Icon name="forward" /></button>
         </form>
       </section>:adminOpen&&adminSession?<ForumAdmin apiBase={API} locale={locale} session={adminSession} onExpired={expireAdmin} onClose={()=>void run(async()=>{setAdminOpen(false);setSolving(false);setThread(null);setReplies([]);setEdit(null);await loadQuestions();})} />:<>
         <div className={styles.pageHeading}>
@@ -168,7 +171,7 @@ export function Forum() {
             <div className={styles.composeFooter}><span className={styles.characterCount}>{articleBody.length.toLocaleString()} / 20,000</span><div className={styles.actions}><button type="button" onClick={()=>{if((articleBody||articleTitle)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setSharing(false);setArticleTitle('');setArticleBody('');articleKey.current='';}}>{t('取消','Cancel')}</button><button className={styles.primary} disabled={busy||!articleTitle.trim()||!articleBody.trim()}>{t('發布並同步 WikiNB','Publish & sync WikiNB')}</button></div></div>
           </form>}
           {!articlesLoaded?<p className={styles.empty} role="status">{t('載入中…','Loading…')}</p>:articles.length===0?<p className={styles.empty}>{t('尚無文章','No articles')}</p>:articles.map(article=><article className={styles.post} key={article.id}>
-            <h2 className={styles.articleTitle}>{article.title}</h2><div className={styles.meta}><span>{article.name}</span><time dateTime={new Date(article.created_at).toISOString()}>{time(article.created_at)}</time></div>
+            <h2 className={styles.articleTitle}>{article.title}</h2><div className={styles.meta}><span>{article.mine&&session?name:article.name}</span><span>{article.mine&&session?department:article.department}</span><time dateTime={new Date(article.created_at).toISOString()}>{time(article.created_at)}</time></div>
             <p className={styles.articlePreview}>{article.body.replace(/^# [^\n]+\n+/,'').slice(0,180)}{article.body.length>180?'…':''}</p><details className={styles.articleDetails}><summary>{t('閱讀全文','Read article')}</summary><p className={styles.body}>{article.body}</p></details>
             {session?.admin&&<button className={styles.resolveButton} disabled={busy} onClick={()=>{if(!window.confirm(t('刪除這篇文章？後台會保留紀錄。','Delete this article? Its history will be retained.')))return;void run(async()=>{await api('/admin/articles/'+article.id+'/moderate','POST',{version:article.version,action:'hide'});await loadArticles();});}}>{t('刪除','Delete')}</button>}
           </article>)}
@@ -214,7 +217,7 @@ export function Forum() {
                 <button disabled={busy} className={styles.question} onClick={()=>void run(()=>openThread(q.id))}>
                   <div className={styles.questionContent}>
                     <ForumPostText post={q} locale={locale} preview />
-                    <div className={styles.meta}><span className={styles.author}>{q.name}</span><span>{q.department}</span><time dateTime={new Date(q.created_at).toISOString()}>{time(q.created_at)}</time></div>
+                    <div className={styles.meta}><span className={styles.author}>{q.mine&&session?name:q.name}</span><span>{q.mine&&session?department:q.department}</span><time dateTime={new Date(q.created_at).toISOString()}>{time(q.created_at)}</time></div>
                   </div>
                   <div className={styles.questionStatus}>{!!q.resolved&&<span className={styles.resolved}>{t('已解決','Resolved')}</span>}<span className={styles.replyCount}><Icon name="message" />{q.reply_count} {t('則回覆',q.reply_count===1?'reply':'replies')}</span></div>
                   <span className={styles.rowArrow}><Icon name="forward" /></span>

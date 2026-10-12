@@ -58,8 +58,11 @@ export function createHandler() {
       if (path === '/api/health' && method === 'GET') { await stmt('SELECT 1 FROM public_questions LIMIT 1').first(); await stmt('SELECT 1 FROM post_archive LIMIT 1').first(); return json({ok:true}); }
       const input = ['POST','PATCH'].includes(method) ? await readInput(request) : {};
       const bearer = request.headers.get('authorization') || '';
-      const account=await verifiedAccount(request,env,now);
+      let account=await verifiedAccount(request,env,now);
       const owner = account ? await hash('account:'+account.email) : /^Bearer [a-f0-9]{64}$/.test(bearer) ? await hash(bearer.slice(7)) : '';
+      const signedAccount=account;
+      const profile=account?await stmt('SELECT * FROM account_profiles WHERE owner_hash=?',owner).first():null;
+      if(profile)account={...account,nickname:profile.name,name:profile.name,department:profile.department};
       const pageOffset = key => Math.floor(Math.max(0, Math.min(100000, Number(url.searchParams.get(key)) || 0)));
       async function rate(key, maximum, windowMs) {
         const bucket = Math.floor(now / windowMs);
@@ -71,13 +74,24 @@ export function createHandler() {
         await rate(`request:${ip}`, 120, 60000);
       }
       const isTeacher = account && ['teacher','admin'].includes(account.role);
+      if(path==='/api/account/profile'&&method==='POST'){
+        if(!signedAccount)fail(401,'auth');
+        const name=textOf(signedAccount.nickname||signedAccount.name,60,'identity'),department=textOf(signedAccount.department,40,'identity'),revision=String(signedAccount.updatedAt||'');
+        if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(revision)||/[\r\n]/.test(name+department))fail(400,'invalid');
+        async function ownedReferences(){return {articles:(await stmt('SELECT id FROM public_articles WHERE owner_hash=?',owner).all()).results.map(row=>row.id),questions:(await stmt('SELECT id FROM public_questions WHERE owner_hash=?',owner).all()).results.map(row=>row.id)};}
+        if(profile&&profile.updated_at>=revision)return json({ok:true,duplicate:true,owned:await ownedReferences()});
+        const statements=[];
+        for(const kind of ['questions','replies','articles'])statements.push(stmt(`UPDATE public_${kind} SET name=?,department=?,updated_at=?,version=version+1 WHERE owner_hash=? AND (name<>? OR department<>?) AND NOT EXISTS(SELECT 1 FROM account_profiles WHERE owner_hash=? AND updated_at>?)`,name,department,now,owner,name,department,owner,revision));
+        statements.push(stmt('INSERT INTO account_profiles(owner_hash,name,department,updated_at) VALUES(?,?,?,?) ON CONFLICT(owner_hash) DO UPDATE SET name=excluded.name,department=excluded.department,updated_at=excluded.updated_at WHERE excluded.updated_at>account_profiles.updated_at',owner,name,department,revision));
+        await db.batch(statements);return json({ok:true,wikinb:'queued',owned:await ownedReferences()});
+      }
       if (path === '/api/articles' && method === 'GET') {
         const rows=(await stmt('SELECT * FROM public_articles WHERE deleted_at IS NULL ORDER BY created_at DESC,id LIMIT 30 OFFSET ?',pageOffset('offset')).all()).results;
         return json({articles:rows.map(row=>publicPost(row,owner))});
       }
       async function archiveArticle(row) {
         const markdown=['---','kind: forum-article','article_id: '+row.id,'version: '+row.version,'title: '+JSON.stringify(row.title),'author: '+JSON.stringify(row.name),'status: '+(row.deleted_at?'deleted':'published'),'---','','# '+row.title,'',row.body,'','作者：'+row.name].join('\n');
-        return stmt('INSERT INTO article_archive(event_id,article_id,version,title,author,markdown,created_at,deleted_at) SELECT ?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM public_articles WHERE id=? AND version=? AND updated_at=?)','article:'+row.id+':v'+row.version,row.id,row.version,row.title,row.name,markdown,row.updated_at,row.deleted_at,row.id,row.version,row.updated_at);
+        return stmt('INSERT INTO article_archive(event_id,article_id,version,title,author,department,markdown,created_at,deleted_at) SELECT ?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM public_articles WHERE id=? AND version=? AND updated_at=?)','article:'+row.id+':v'+row.version,row.id,row.version,row.title,row.name,row.department||'教職員',markdown,row.updated_at,row.deleted_at,row.id,row.version,row.updated_at);
       }
       if (path === '/api/articles' && method === 'POST') {
         if(!account)fail(401,'auth'); if(!isTeacher)fail(403,'teacher');
@@ -86,8 +100,9 @@ export function createHandler() {
         const existing=await stmt('SELECT * FROM public_articles WHERE id=?',id).first();
         if(existing){if(existing.owner_hash!==owner||existing.title!==title||existing.body!==body||existing.deleted_at)fail(409,'conflict');return json({id,wikinb:'queued'},201);}
         await rate('article:'+owner,10,60000); await rate('article:global',500,DAY);
-        const row={id,title,body,name,version:1,updated_at:now,deleted_at:null};
-        await db.batch([stmt('INSERT INTO public_articles(id,owner_hash,title,body,name,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',id,owner,title,body,name,now,now),await archiveArticle(row)]);
+        const department=textOf(account.department||(account.role==='student'?'學生':'教職員'),40,'identity');
+        const row={id,title,body,name,department,version:1,updated_at:now,deleted_at:null};
+        await db.batch([stmt('INSERT INTO public_articles(id,owner_hash,title,body,name,department,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)',id,owner,title,body,name,department,now,now),await archiveArticle(row)]);
         return json({id,wikinb:'queued'},201);
       }
       const articleModeration=path.match(/^\/api\/admin\/articles\/([a-f0-9-]+)\/moderate$/);
@@ -157,7 +172,7 @@ export function createHandler() {
       if ((path === '/api/questions' || path === '/api/replies') && method === 'POST') {
         if (path === '/api/questions' && !account) fail(401,'auth');
         if (!owner) fail(400,'identity');
-        const name = textOf(account?.nickname || account?.name || input.name,60,'identity'), department = textOf(input.department,80,'identity');
+        const name = textOf(account?.nickname || account?.name || input.name,60,'identity'), department = textOf(account?(account.department||(account.role==='student'?'學生':'教職員')):input.department,40,'identity');
         if (/[\r\n]/.test(name+department)) fail(400,'identity');
         const id = idOf(input.id), body = textOf(input.body,4000,'length'), kind = path.endsWith('questions') ? 'questions' : 'replies';
         const qid = kind === 'replies' ? idOf(input.question_id) : null;

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useSyncExternalStore } from 'react';
-export type SchoolSession={user:{email:string;nickname:string;name:string;role:string};token:string;admin:boolean};
+export type SchoolSession={user:{email:string;nickname:string;name:string;department:string;updatedAt?:string;role:string};token:string;admin:boolean};
 const configured=process.env.NEXT_PUBLIC_AUTH_API_URL||'';
 export function authBase(){
   const local=typeof location!=='undefined'&&['localhost','127.0.0.1'].includes(location.hostname);

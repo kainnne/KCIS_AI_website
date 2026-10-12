@@ -72,3 +72,12 @@ The shared backend now signs in with email + OTP only; it assigns the email loca
 部署前先匯出 D1，套用 migrations，再部署 Worker。設定既有 `WIKINB_API_URL` 與 `WIKINB_INGEST_SECRET`；接手時換成主管的 API 網址與秘密，接收端必須開放限定 `/api/library/forum-articles` 路由。不要把 SMTP 或模型金鑰寫入 Worker。
 
 已移除貼文／回覆翻譯路由和 Workers AI binding。舊翻譯資料表保留為相容歷史，不會再呼叫翻譯模型。介面語言切換與文章原文無關。
+
+
+## Account profiles (2026-10-12)
+
+Forum UI is English. The existing guest entrance layout is retained; a verified school session bypasses it automatically, without a transient guest form. The separate department control is removed. Main, Forum and WikiNB account buttons/dialogs use the same CSS, Name and Department fields, save feedback and sign-out confirmation.
+
+Apply migration 0009 after backing up D1, then publish the Worker and configure the Node receiver FORUM_API_URL. POST /api/account/profile accepts a signed school account; name, department and revision come from the signed identity, not the request body. It atomically updates only owned current rows, appends versions through existing triggers and queues WikiNB/Drive snapshots. Replays and older revisions do not revert names. Owned IDs let the private receiver link old copies safely; no email/owner hash is exposed in public post responses. Permissions continue to depend on verified role/admin email. Unknown legacy guest ownership is never inferred from a display name.
+
+The handoff allowlist already includes the new CSS, migration and source modules. Secrets and local test data are excluded from the source release.
