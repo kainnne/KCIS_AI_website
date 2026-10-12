@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import styles from './Forum.module.css';
 import { ForumPostText } from './ForumPostText';
 import { ForumAdmin, type AdminSession } from './ForumAdmin';
-import { SchoolLogin, type GuestProfile } from './SchoolLogin';
+import { type GuestProfile } from './SchoolLogin';
+import { SiteHeader } from './SiteHeader';
 import { useSchoolSession } from '@/lib/shared-auth';
 
 type Post = { id:string; body:string; name:string; department:string; mine:boolean; created_at:number; updated_at:number; deleted_at:number|null; version:number; reply_count?:number; resolved?:number; solution_method?:string; solution_steps?:string; solution_result?:string };
@@ -131,16 +132,7 @@ export function Forum() {
     setSolving(false);setThread(null);setReplies([]);setEdit(null);setReplyDraft('');replyKey.current='';await loadQuestions();
   }
 
-  return <div className={styles.forum} lang="en">
-    <header className={styles.header}>
-      <div className={styles.headerInner}>
-        <a className={styles.brand} href={(process.env.NEXT_PUBLIC_BASE_PATH||'')+'/'}><Icon name="back" /><span>KCIS AI Tools</span></a>
-        <div className={styles.headerActions}><SchoolLogin allowGuest={enteredGuest} onGuestChange={profile=>{setGuestProfile(profile);if(!profile)setEnteredGuest(false);}} />
-          {entered&&adminSession&&!adminOpen&&<button className={styles.locale} disabled={busy} onClick={()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}}>{t('管理','Manage')}</button>}
-
-        </div>
-      </div>
-    </header>
+  return <><SiteHeader allowGuest={enteredGuest} onGuestChange={profile=>{setGuestProfile(profile);if(!profile)setEnteredGuest(false);}} onManage={entered&&adminSession&&!adminOpen?()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}:undefined}/><div className={styles.forum} lang="en">
     <main className={!entered?styles.entryWorkspace:thread?styles.threadWorkspace:styles.workspace} aria-busy={busy||!sessionReady}>
       {error&&!adminOpen&&<div role="alert" className={styles.error}><span>{errors[error]?.[locale==='en'?1:0]||t(errors.unavailable[0],errors.unavailable[1])}</span><button disabled={busy} onClick={()=>void run(async()=>{if(entered){if(thread)await fetchThread(thread.id);else await loadQuestions();}})}>{t('重新載入','Reload')}</button></div>}
       {!sessionReady?<p role="status" className={styles.empty}>Checking account…</p>:!entered?<section className={styles.entry} aria-labelledby="forum-entry-title">
@@ -229,7 +221,7 @@ export function Forum() {
         </>}
       </>}
     </main>
-  </div>;
+  </div></>;
 }
 
 type IconName = 'plus'|'back'|'forward'|'message'|'language'|'chevron'|'check';

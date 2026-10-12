@@ -32,7 +32,10 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>("zh-TW");
 
+  useEffect(()=>{try{const saved=localStorage.getItem('kcis-ui-locale');if(saved==='en'||saved==='zh-TW')setLocale(saved);}catch{}},[]);
   useEffect(() => {
+    document.documentElement.dataset.locale=locale;
+    try{localStorage.setItem('kcis-ui-locale',locale);}catch{}
     document.documentElement.lang = locale === "en" ? "en" : "zh-Hant";
   }, [locale]);
 

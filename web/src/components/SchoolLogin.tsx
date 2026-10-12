@@ -1,7 +1,9 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { clearSchoolSession, refreshSchoolSession, schoolRequest, sessionChanged, useSchoolSession } from '@/lib/shared-auth';
 import './SchoolAccount.css';
+import { createPortal } from 'react-dom';
+import { useI18n } from '@/lib/i18n';
 export type GuestProfile={name:string;department:string};
 const guestKey='kcis-forum-profile';
 function returnDestination(){
@@ -11,7 +13,8 @@ function returnDestination(){
  if(['localhost','127.0.0.1'].includes(location.hostname)&&url.hostname===location.hostname&&url.protocol==='http:'&&url.port==='4322')return url.href;
  }catch{}return '';
 }
-export function SchoolLogin({allowGuest=false,onGuestChange}:{allowGuest?:boolean;onGuestChange?:(profile:GuestProfile|null)=>void}){
+export function SchoolLogin({allowGuest=false,onGuestChange,renderTrigger}:{allowGuest?:boolean;onGuestChange?:(profile:GuestProfile|null)=>void;renderTrigger?:(controls:{openAccount:()=>void;openSignOut:()=>void;guest:GuestProfile|null})=>ReactNode}){
+ const {locale}=useI18n(),label=(en:string,zh:string)=>locale==='en'?en:zh;
  const {session,ready,error:sessionError}=useSchoolSession(),dialog=useRef<HTMLDialogElement>(null),openedFromLink=useRef(false),composing=useRef(false),guestCallback=useRef(onGuestChange);guestCallback.current=onGuestChange;
  const [view,setView]=useState<'login'|'account'|'logout'|'guest'|null>(null),[step,setStep]=useState<'email'|'code'>('email');
  const [guest,setGuest]=useState<GuestProfile|null>(null),[email,setEmail]=useState(''),[code,setCode]=useState(''),[nickname,setNickname]=useState(''),[department,setDepartment]=useState(''),[busy,setBusy]=useState(false),[busyLabel,setBusyLabel]=useState('Saving…'),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -57,27 +60,27 @@ export function SchoolLogin({allowGuest=false,onGuestChange}:{allowGuest?:boolea
  }
  const account=view==='account'||view==='guest',logout=view==='logout';
  return <>
-  <button type="button" className="kc-account-button" disabled={!ready} aria-label={!ready?'Checking account':session||guest?'Account':'Sign in'} onClick={()=>void openAccount()}>{!ready?'Checking…':session?session.user.nickname||session.user.name:guest&&allowGuest?'Guest · '+guest.name:'Sign in'}</button>
-  {(notice||sessionError)&&<span className="kc-account-notice" role="status">{notice||sessionError}</span>}
-  <dialog ref={dialog} className="kc-account-dialog" aria-labelledby="kc-account-title" onCancel={e=>{if(busy)e.preventDefault();else close();}} onClose={()=>{if(!busy)setView(null);}}>
+  {renderTrigger?renderTrigger({openAccount:()=>void openAccount(),openSignOut:()=>{setError('');setView('logout');},guest:allowGuest?guest:null}):<button type="button" className="kc-account-button" disabled={!ready} aria-label={!ready?'Checking account':session||guest?'Account':'Sign in'} onClick={()=>void openAccount()}>{!ready?'Checking…':session?session.user.nickname||session.user.name:guest&&allowGuest?'Guest · '+guest.name:'Sign in'}</button>}
+  {ready&&(notice||sessionError)&&createPortal(<span className="kc-account-notice" role="status">{notice||sessionError}</span>,document.body)}
+  {ready&&createPortal(<dialog ref={dialog} className="kc-account-dialog" aria-labelledby="kc-account-title" onCancel={e=>{if(busy)e.preventDefault();else close();}} onClose={()=>{if(!busy)setView(null);}}>
    <button type="button" className="kc-account-close" disabled={busy} aria-label="Close" onClick={close}>×</button>
-   <h2 id="kc-account-title">{logout?'Sign out?':view==='guest'?'Guest':account?'Account':'School sign-in'}</h2>
+   <h2 id="kc-account-title">{logout?label('Sign out?','要登出嗎？'):view==='guest'?label('Guest','訪客'):account?label('Account','帳號'):label('School sign-in','校內信箱登入')}</h2>
    {view==='account'&&<p className="kc-account-email">{session?.user.email}</p>}
    <form onSubmit={e=>{e.preventDefault();void submit();}} aria-busy={busy}>
     {!logout&&(account?<>
-     <label>Name<input value={nickname} autoComplete="nickname" minLength={2} maxLength={20} onChange={e=>setNickname(e.target.value)} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&(composing.current||e.nativeEvent.isComposing||e.keyCode===229))e.preventDefault();}} disabled={busy} required autoFocus /></label>
-     <label>Department<input value={department} autoComplete="organization" maxLength={40} onChange={e=>setDepartment(e.target.value)} disabled={busy} required /></label>
-    </>:step==='email'?<label>School email<input type="email" value={email} autoComplete="email" onChange={e=>setEmail(e.target.value)} disabled={busy} required autoFocus /></label>:<label>Verification code<input value={code} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} onChange={e=>setCode(e.target.value)} disabled={busy} required autoFocus /><small>{email}</small></label>)}
+     <label>{label('Name','姓名')}<input value={nickname} autoComplete="nickname" minLength={2} maxLength={20} onChange={e=>setNickname(e.target.value)} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&(composing.current||e.nativeEvent.isComposing||e.keyCode===229))e.preventDefault();}} disabled={busy} required autoFocus /></label>
+     <label>{label('Department','部門')}<input value={department} autoComplete="organization" maxLength={40} onChange={e=>setDepartment(e.target.value)} disabled={busy} required /></label>
+    </>:step==='email'?<label>{label('School email','校內信箱')}<input type="email" value={email} autoComplete="email" onChange={e=>setEmail(e.target.value)} disabled={busy} required autoFocus /></label>:<label>{label('Verification code','驗證碼')}<input value={code} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} onChange={e=>setCode(e.target.value)} disabled={busy} required autoFocus /><small>{email}</small></label>)}
     {error&&<p role="alert">{error}</p>}
     <div className="kc-account-actions">
-     <button className="kc-account-primary" disabled={busy}>{busy?busyLabel:logout?'Sign out':account?'Save':step==='email'?'Send code':'Continue'}</button>
-     {logout&&<button type="button" className="kc-account-secondary" disabled={busy} onClick={()=>void openAccount()}>Cancel</button>}
-     {account&&<button type="button" className="kc-account-secondary" disabled={busy} onClick={()=>{setError('');setView('logout');}}>Sign out</button>}
+     <button className="kc-account-primary" disabled={busy}>{busy?busyLabel:logout?label('Sign out','登出'):account?label('Save','儲存'):step==='email'?label('Send code','寄送驗證碼'):label('Continue','繼續')}</button>
+     {logout&&<button type="button" className="kc-account-secondary" disabled={busy} onClick={()=>void openAccount()}>{label('Cancel','取消')}</button>}
+     {account&&<button type="button" className="kc-account-secondary" disabled={busy} onClick={()=>{setError('');setView('logout');}}>{label('Sign out','登出')}</button>}
     </div>
     {!account&&!logout&&step!=='email'&&<button type="button" className="kc-account-text" disabled={busy} onClick={()=>{setStep('email');setCode('');setError('');}}>Resend / change email</button>}
 
     {view==='guest'&&<button type="button" className="kc-account-text" disabled={busy} onClick={()=>{setStep('email');setView('login');}}>Sign in with school email</button>}
    </form>
-  </dialog>
+  </dialog>,document.body)}
  </>;
 }
