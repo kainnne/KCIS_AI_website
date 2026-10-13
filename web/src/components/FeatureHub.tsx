@@ -8,7 +8,6 @@ export type FeatureHubItem = {
   monogram: string;
   title: string;
   description: string;
-  audience: string;
   action: string;
   variant: "light" | "dark" | "mint" | "purple";
   onClick?: () => void;
@@ -44,7 +43,6 @@ function FeatureCard({
   monogram,
   title,
   description,
-  audience,
   action,
   onClick,
   href,
@@ -55,7 +53,6 @@ function FeatureCard({
   monogram: string;
   title: string;
   description: string;
-  audience: string;
   action: string;
   onClick?: () => void;
   href?: string;
@@ -66,7 +63,6 @@ function FeatureCard({
       <span className="kc-feature-glow" aria-hidden />
       <span className="kc-feature-topline">
         <span>{index}</span>
-        <span>{audience}</span>
       </span>
       <span className="kc-feature-monogram" aria-hidden>{monogram}</span>
       <span className="kc-feature-copy">
