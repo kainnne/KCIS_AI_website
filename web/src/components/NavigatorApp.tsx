@@ -11,17 +11,21 @@ import {
 } from "@/lib/adaptive";
 import { useI18n } from "@/lib/i18n";
 import { rankTools } from "@/lib/scoring";
-import { getTools } from "@/lib/tools";
-import type { Department, Role, UserNeed, WizardStep } from "@/lib/types";
+import dynamic from "next/dynamic";
+import type { Department, Role, Tool, UserNeed, WizardStep } from "@/lib/types";
 import { DecorBackground } from "./DecorBackground";
 import { FeatureHub } from "./FeatureHub";
 import { InteractiveField } from "./InteractiveField";
 import { InteractiveHero } from "./InteractiveHero";
-import { KusePromptBuilder } from "./KusePromptBuilder";
+
 import { OptionCard, StepPanel } from "./OptionCard";
 import { ProgressBar } from "./ProgressBar";
-import { ResultsPanel } from "./ResultsPanel";
+
 import { SiteHeader } from "./SiteHeader";
+
+function FeatureLoading(){const {locale}=useI18n();return <p role="status" className="mx-auto max-w-5xl px-6 py-10 text-center text-kc-muted">{locale==='en'?'Loading…':'載入中…'}</p>;}
+const KusePromptBuilder=dynamic(()=>import('./KusePromptBuilder').then(module=>module.KusePromptBuilder),{loading:FeatureLoading});
+const ResultsPanel=dynamic(()=>import('./ResultsPanel').then(module=>module.ResultsPanel),{loading:FeatureLoading});
 
 const initialNeed = (locale: UserNeed["locale"]): UserNeed => ({
   role: null,
@@ -49,7 +53,13 @@ export function NavigatorApp() {
   const [mode, setMode] = useState<"hub" | "navigator" | "kuse">("hub");
   const [step, setStep] = useState<WizardStep>("welcome");
   const [need, setNeed] = useState<UserNeed>(() => initialNeed(locale));
-  const tools = useMemo(() => getTools(), []);
+  const [tools,setTools]=useState<Tool[]>([]),[toolsReady,setToolsReady]=useState(false),[toolsFailed,setToolsFailed]=useState(false);
+  useEffect(()=>{
+    if(mode!=='navigator'||toolsReady)return;
+    let active=true;setToolsFailed(false);
+    void import('@/lib/tools').then(({getTools})=>{if(active){setTools(getTools());setToolsReady(true);}}).catch(()=>{if(active)setToolsFailed(true);});
+    return()=>{active=false;};
+  },[mode,toolsReady]);
 
   const needWithLocale: UserNeed = useMemo(
     () => ({ ...need, locale }),
@@ -131,7 +141,6 @@ export function NavigatorApp() {
         {mode === "hub" ? (
           <FeatureHub
             key="hub"
-            title={t.hub.eyebrow}
             features={[
               {
                 id: "navigator",
@@ -405,7 +414,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {mode === "navigator" && step === "results" ? (
+        {mode === "navigator" && step === "results" ? (!toolsReady ? <p role="status" className="mx-auto max-w-5xl px-6 py-10 text-center">{toolsFailed?(locale==='en'?'Could not load tools. Please refresh.':'無法載入工具，請重新整理。'):(locale==='en'?'Loading tools…':'正在載入工具…')}</p> :
           <ResultsPanel
             key="results"
             need={needWithLocale}

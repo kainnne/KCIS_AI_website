@@ -16,25 +16,20 @@ export type FeatureHubItem = {
 };
 
 export function FeatureHub({
-  title,
   features,
 }: {
-  title: string;
   features: FeatureHubItem[];
 }) {
   const reduce = useReducedMotion();
 
   return (
     <motion.main
-      initial={reduce ? false : { opacity: 0, y: 18 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       exit={reduce ? undefined : { opacity: 0, y: -12 }}
+      aria-label="AI Tools"
       className="kc-hub mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10"
     >
-      <div className="kc-hub-heading">
-        <h1>{title}</h1>
-      </div>
-
       <div className="kc-feature-grid">
         {features.map((feature) => (
           <FeatureCard key={feature.id} {...feature} reduce={Boolean(reduce)} />
