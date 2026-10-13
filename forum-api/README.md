@@ -11,7 +11,7 @@ Cloudflare Worker and D1 backend for the third card on the AI Tools homepage.
 
 WikiNB KCIS and AI Tools share school-email OTP and nickname settings. AI Tools hosts the sign-in control. The frontend retrieves a short-lived shared-session response from the configured HTTPS auth API, using its HttpOnly cookie. Forum requests carry the signed JWT; the Worker independently verifies HS256, expiry and the allowed school domain. `SESSION_SECRET` must match the auth server and must be configured only as a Worker secret.
 
-Visitors can read and reply with a temporary editing capability. Verified school accounts can ask questions; ownership is derived from the verified email, never the entered name. The only administrator is `kainnne@kcis.com.tw`. The previous name/department management condition is no longer accepted. Legacy posts without an account association remain manageable by the administrator; they are not claimed by matching names.
+All forum content and posting require the shared school-email OTP login. Anonymous visitors and old temporary editing capabilities cannot read, ask, or reply. Verified school accounts can ask questions; ownership is derived from the verified email, never the entered name. The only administrator is `kainnne@kcis.com.tw`. The previous name/department management condition is no longer accepted. Legacy posts without an account association remain manageable by the administrator; they are not claimed by matching names.
 
 Only the verified author or administrator can resolve/reopen a question. Resolving requires solution, steps and verification result. Resolved questions cannot be edited directly or withdrawn; administrator moderation is reversible and preserves originals.
 
@@ -65,7 +65,7 @@ The shared backend now signs in with email + OTP only; it assigns the email loca
 
 ## 2026-10-09：文章分享與同步
 
-`POST /api/articles` 接受 `id`（UUID）、`title`（160 字）、`body`（20,000 字），只允許已驗證教職員／管理員；名稱來自簽署帳號，不能由輸入假冒。`GET /api/articles` 是公開文章列表；分享前須確認內容可公開。WikiNB 的副本仍需校內登入才能讀。學生與訪客無分享權限。
+`POST /api/articles` 接受 `id`（UUID）、`title`（160 字）、`body`（20,000 字），只允許已驗證教職員／管理員；名稱來自簽署帳號，不能由輸入假冒。`GET /api/articles` 僅供已驗證校內帳號讀取；分享前須確認內容可供校內閱讀。WikiNB 的副本同樣需校內登入才能讀。學生無分享權限，訪客不能讀取或發布。
 
 0007 建立文章、不可變版本及 WikiNB／Drive outbox，0008 留存新問題的老師／學生來源。管理員可刪除或復原文章，無硬刪除。發布與歸檔在同一筆交易完成；任何歸檔失敗都拒絕發布。同步有租約、重試及版本去重；發布後背景嘗試，排程每五分鐘補送。排入佇列不等於已在 Drive 留存。
 
@@ -76,7 +76,7 @@ The shared backend now signs in with email + OTP only; it assigns the email loca
 
 ## Account profiles (2026-10-12)
 
-Forum UI is English. The existing guest entrance layout is retained; a verified school session bypasses it automatically, without a transient guest form. The separate department control is removed. Main, Forum and WikiNB account buttons/dialogs use the same CSS, Name and Department fields, save feedback and sign-out confirmation.
+Forum UI is English. The shared school-email sign-in dialog is the only entrance; an existing verified school session enters directly. Legacy guest forms and temporary editing capabilities are removed. The separate department control is removed. Main, Forum and WikiNB account buttons/dialogs use the same CSS, Name and Department fields, save feedback and sign-out confirmation.
 
 Apply migration 0009 after backing up D1, then publish the Worker and configure the Node receiver FORUM_API_URL. POST /api/account/profile accepts a signed school account; name, department and revision come from the signed identity, not the request body. It atomically updates only owned current rows, appends versions through existing triggers and queues WikiNB/Drive snapshots. Replays and older revisions do not revert names. Owned IDs let the private receiver link old copies safely; no email/owner hash is exposed in public post responses. Permissions continue to depend on verified role/admin email. Unknown legacy guest ownership is never inferred from a display name.
 

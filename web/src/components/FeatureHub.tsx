@@ -16,14 +16,10 @@ export type FeatureHubItem = {
 };
 
 export function FeatureHub({
-  eyebrow,
   title,
-  subtitle,
   features,
 }: {
-  eyebrow: string;
   title: string;
-  subtitle: string;
   features: FeatureHubItem[];
 }) {
   const reduce = useReducedMotion();
@@ -36,12 +32,7 @@ export function FeatureHub({
       className="kc-hub mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10"
     >
       <div className="kc-hub-heading">
-        <p className="kc-eyebrow">
-          <span />
-          {eyebrow}
-        </p>
         <h1>{title}</h1>
-        <p>{subtitle}</p>
       </div>
 
       <div className="kc-feature-grid">

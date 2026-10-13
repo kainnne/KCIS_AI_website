@@ -131,9 +131,7 @@ export function NavigatorApp() {
         {mode === "hub" ? (
           <FeatureHub
             key="hub"
-            eyebrow={t.hub.eyebrow}
-            title={t.hub.title}
-            subtitle={t.hub.subtitle}
+            title={t.hub.eyebrow}
             features={[
               {
                 id: "navigator",

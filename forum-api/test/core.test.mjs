@@ -15,18 +15,19 @@ function fixture() {
   const inferences=[];
   const env={SESSION_SECRET:'s'.repeat(64),ADMIN_NAME:'Test moderator',ADMIN_DEPARTMENT:'IT',ADMIN_SESSION_SECRET:'s'.repeat(64),DB:{prepare,async batch(statements){sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}},ALLOWED_ORIGIN:'https://ai-tools.kcis.kainnne.com',AI:{async run(model,input){inferences.push({model,input});return {response:'How do I use AI?'};}}};
   const handler=createHandler();
-  async function call(path,{method='GET',body,token,admin,origin=env.ALLOWED_ORIGIN}={}){
+  async function call(path,{method='GET',body,admin,token=admin?null:defaultToken,origin=env.ALLOWED_ORIGIN}={}){
     const response=await handler(new Request('https://api.example.test/api'+path,{method,headers:{Origin:origin,...(body!==undefined?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{}),...(admin?{'X-Forum-Admin':admin}:{})},body:body===undefined?undefined:JSON.stringify(body)}),env);
     return {status:response.status,headers:response.headers,data:response.status===204?null:await response.json()};
   }
   const sign=(email,exp=Math.floor(Date.now()/1000)+3600,profile={})=>{const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),b=Buffer.from(JSON.stringify({email,nickname:'測試姓名',role:(email==='st101031616@gmail.com'||/^[sj]\d{5}(?:$|[^a-z0-9])/i.test(email.split('@')[0]))?'student':'teacher',authType:'email-otp',department:'英文科',updatedAt:new Date().toISOString(),...profile,exp})).toString('base64url');return h+'.'+b+'.'+createHmac('sha256',env.SESSION_SECRET).update(h+'.'+b).digest('base64url');};
-  const token=sign('teacher@kcis.com.tw'),other=sign('other@kcis.com.tw'),adminToken=sign('kainnne@kcis.com.tw');
+  const defaultToken=sign('teacher@kcis.com.tw');
+  const token=defaultToken,other=sign('other@kcis.com.tw'),adminToken=sign('kainnne@kcis.com.tw');
   const question={id:crypto.randomUUID(),body:'請問怎麼使用 AI？',name:'測試姓名',department:'英文科'};
   const create=()=>call('/questions',{method:'POST',body:question,token});
   return {sql,env,call,create,question,token,other,inferences,adminToken,sign};
 }
 
-test('public reading, required identity, no login routes and exact CORS',async()=>{
+test('school-authenticated reading, required identity, no login routes and exact CORS',async()=>{
   const f=fixture();
   assert.equal((await f.call('/questions')).status,200);
   assert.equal((await f.call('/auth/code',{method:'POST',body:{email:'a@example.test'}})).status,404);
@@ -34,9 +35,9 @@ test('public reading, required identity, no login routes and exact CORS',async()
   assert.equal((await f.call('/questions',{origin:'https://evil.test'})).status,403);
   for(const body of [{...f.question,department:''},{...f.question,department:'x\ny'}])assert.equal((await f.call('/questions',{method:'POST',body,token:f.token})).status,201);
   assert.equal((await f.call('/questions',{method:'POST',body:{...f.question,id:crypto.randomUUID()},token:f.sign('teacher@kcis.com.tw',undefined,{department:'x\ny'})})).status,400);
-  assert.equal((await f.call('/questions',{method:'POST',body:f.question})).status,401);
+  assert.equal((await f.call('/questions',{method:'POST',body:f.question,token:null})).status,401);
   assert.equal((await f.create()).status,201);
-  const view=await f.call('/questions');assert.equal(view.data.questions[0].department,'英文科');assert.equal(view.data.questions[0].mine,false);
+  const view=await f.call('/questions',{token:f.other});assert.equal(view.data.questions[0].department,'英文科');assert.equal(view.data.questions[0].mine,false);
   assert.ok(!JSON.stringify(view.data).includes('owner_hash'));assert.ok(!JSON.stringify(view.data).includes(f.token));
   assert.equal(view.headers.get('cache-control'),'private, no-store');f.sql.close();
 });
@@ -241,10 +242,10 @@ test('only verified author or school admin can resolve, required fields, durable
  f.sql.close();
 });
 
-test('guest may answer but cannot ask; account ownership persists across new signed sessions',async()=>{
+test('retired guest cannot ask or answer; account ownership persists across new signed sessions',async()=>{
  const f=fixture();await f.create();
  assert.equal((await f.call('/questions',{method:'POST',body:{...f.question,id:crypto.randomUUID()},token:'c'.repeat(64)})).status,401);
- assert.equal((await f.call('/replies',{method:'POST',body:{id:crypto.randomUUID(),question_id:f.question.id,name:'Guest',department:'校外',body:'訪客回覆'},token:'c'.repeat(64)})).status,201);
+ assert.equal((await f.call('/replies',{method:'POST',body:{id:crypto.randomUUID(),question_id:f.question.id,name:'Guest',department:'校外',body:'訪客回覆'},token:'c'.repeat(64)})).status,401);
  assert.equal((await f.call('/questions?filter=mine',{token:f.sign('teacher@kcis.com.tw',Math.floor(Date.now()/1000)+7200)})).data.questions.length,1);
  assert.equal((await f.call('/questions',{token:f.sign('stranger@gmail.com')})).status,401);f.sql.close();
 });
@@ -277,7 +278,7 @@ test('exact approved Gmail accounts can post; other Gmail and suffix aliases rem
 
 test('only verified teachers publish articles; immutable archive, atomic outboxes, dedupe and admin moderation',async()=>{
  const f=fixture(),article={id:crypto.randomUUID(),title:'AI lesson',body:'An article with complete context.'};
- assert.equal((await f.call('/articles',{method:'POST',body:article})).status,401);
+ assert.equal((await f.call('/articles',{method:'POST',body:article,token:null})).status,401);
  assert.equal((await f.call('/articles',{method:'POST',body:article,token:f.sign('st101031616@gmail.com')})).status,403);
  assert.equal((await f.call('/articles',{method:'POST',body:article,token:f.sign('s12345@kcis.com.tw')})).status,403);
  assert.equal((await f.call('/articles',{method:'POST',body:article,token:f.token})).status,201);
@@ -338,6 +339,20 @@ test('account profile updates only owned current metadata, preserves archives, r
  assert.equal((await f.call('/account/profile',{method:'POST',body:{},token:f.token})).data.duplicate,true);
  const next=crypto.randomUUID();await f.call('/questions',{method:'POST',body:{...f.question,id:next,name:'fake',department:'fake'},token:f.token});
  assert.equal(f.sql.prepare('SELECT name FROM public_questions WHERE id=?').get(next).name,'王_老師');
- assert.equal((await f.call('/account/profile',{method:'POST',body:{}})).status,401);
+ assert.equal((await f.call('/account/profile',{method:'POST',body:{},token:null})).status,401);
  assert.ok(!JSON.stringify((await f.call('/articles')).data).includes('owner_hash'));f.sql.close();
+});
+
+
+test('anonymous and retired guest capabilities cannot read or write school forum content',async()=>{
+ const f=fixture();await f.create();
+ for(const token of [null,'c'.repeat(64)]){
+  for(const path of ['/questions','/questions/'+f.question.id,'/articles'])assert.equal((await f.call(path,{token})).status,401);
+  assert.equal((await f.call('/replies',{method:'POST',token,body:{id:crypto.randomUUID(),question_id:f.question.id,name:'Guest',department:'Other',body:'Blocked'}})).status,401);
+ }
+ assert.equal((await f.call('/health',{token:null})).status,200);
+ assert.equal((await f.call('/questions',{method:'OPTIONS',token:null})).status,204);
+ assert.equal((await f.call('/questions',{token:f.other})).data.questions.length,1);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) count FROM public_replies').get().count,0);
+ f.sql.close();
 });

@@ -57,9 +57,9 @@ export function createHandler() {
       if (method === 'DELETE') fail(405,'method');
       if (path === '/api/health' && method === 'GET') { await stmt('SELECT 1 FROM public_questions LIMIT 1').first(); await stmt('SELECT 1 FROM post_archive LIMIT 1').first(); return json({ok:true}); }
       const input = ['POST','PATCH'].includes(method) ? await readInput(request) : {};
-      const bearer = request.headers.get('authorization') || '';
       let account=await verifiedAccount(request,env,now);
-      const owner = account ? await hash('account:'+account.email) : /^Bearer [a-f0-9]{64}$/.test(bearer) ? await hash(bearer.slice(7)) : '';
+      if(!account)fail(401,'auth');
+      const owner = await hash('account:'+account.email);
       const signedAccount=account;
       const profile=account?await stmt('SELECT * FROM account_profiles WHERE owner_hash=?',owner).first():null;
       if(profile)account={...account,nickname:profile.name,name:profile.name,department:profile.department};

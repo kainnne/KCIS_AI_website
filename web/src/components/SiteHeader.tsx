@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { useSchoolSession } from "@/lib/shared-auth";
-import { SchoolLogin, type GuestProfile } from "./SchoolLogin";
+import { SchoolLogin } from "./SchoolLogin";
 import "./SharedHeader.css";
 const asset=(path:string)=>`${process.env.NEXT_PUBLIC_BASE_PATH??""}${path}`;
 const wiki=(process.env.NEXT_PUBLIC_WIKINB_URL||"https://wikinb.kcis.kainnne.com/").replace(/\/$/,"");
-export function SiteHeader({onHome,allowGuest=false,onGuestChange,onManage}:{onHome?:()=>void;allowGuest?:boolean;onGuestChange?:(profile:GuestProfile|null)=>void;onManage?:()=>void}){
+export function SiteHeader({onHome,onManage}:{onHome?:()=>void;onManage?:()=>void}){
  const {locale,toggleLocale}=useI18n(),{session,ready}=useSchoolSession();
  const [open,setOpen]=useState(false),wrap=useRef<HTMLDivElement>(null),toggle=useRef<HTMLButtonElement>(null);
  const text=(en:string,zh:string)=>locale==='en'?en:zh;
@@ -23,7 +23,7 @@ export function SiteHeader({onHome,allowGuest=false,onGuestChange,onManage}:{onH
  {session&&['teacher','admin'].includes(session.user.role)&&<><a href={wiki+'/notes/'} className="kc-shared-nav-item">{text('Upload documents','上傳文件')}</a><a href={wiki+'/my-notes/'} className="kc-shared-nav-item">{text('My documents','我的文件')}</a></>}
  {onManage&&<button className="kc-shared-nav-item" onClick={()=>act(onManage)}>{text('Manage','管理')}</button>}
  <div className="kc-shared-nav-divider"/>
- <SchoolLogin allowGuest={allowGuest} onGuestChange={onGuestChange} renderTrigger={({openAccount,openSignOut,guest})=><>{session||guest?<><button className="kc-shared-nav-item kc-shared-nav-profile" aria-label={text('Account','帳號')} aria-haspopup="dialog" onClick={()=>act(openAccount)}><span>{session?.user.nickname||session?.user.name||guest?.name}</span><small>{session?.user.department=== '教職員'?text('Staff','教職員'):session?.user.department==='學生'?text('Student','學生'):session?.user.department||guest?.department}</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button className="kc-shared-nav-item" onClick={()=>act(openSignOut)}>{text('Sign out','登出')}</button></>:<button disabled={!ready} className="kc-shared-nav-item" onClick={()=>act(openAccount)}>{ready?text('Sign in','登入'):text('Checking…','確認中…')}</button>}</>}/>
+ <SchoolLogin renderTrigger={({openAccount,openSignOut})=><>{session?<><button className="kc-shared-nav-item kc-shared-nav-profile" aria-label={text('Account','帳號')} aria-haspopup="dialog" onClick={()=>act(openAccount)}><span>{session?.user.nickname||session?.user.name}</span><small>{session?.user.department=== '教職員'?text('Staff','教職員'):session?.user.department==='學生'?text('Student','學生'):session?.user.department}</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button className="kc-shared-nav-item" onClick={()=>act(openSignOut)}>{text('Sign out','登出')}</button></>:<button disabled={!ready} className="kc-shared-nav-item" onClick={()=>act(openAccount)}>{ready?text('Sign in','登入'):text('Checking…','確認中…')}</button>}</>}/>
  <div className="kc-shared-nav-divider"/>
  <button className="kc-shared-nav-item kc-shared-nav-language" aria-label={text('Switch to Chinese','切換為英文')} onClick={toggleLocale}><span>{text('Language','語言')}</span><span className="kc-shared-nav-language-options" aria-hidden="true"><span className={locale==='en'?'is-active':''}>EN</span><span className={locale==='zh-TW'?'is-active':''}>中文</span></span></button>
  </div></div></nav></div></header><div className="kc-shared-header-space" aria-hidden="true"/></>;

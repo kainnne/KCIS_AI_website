@@ -4,14 +4,12 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import styles from './Forum.module.css';
 import { ForumPostText } from './ForumPostText';
 import { ForumAdmin, type AdminSession } from './ForumAdmin';
-import { type GuestProfile } from './SchoolLogin';
 import { SiteHeader } from './SiteHeader';
 import { useSchoolSession } from '@/lib/shared-auth';
 
 type Post = { id:string; body:string; name:string; department:string; mine:boolean; created_at:number; updated_at:number; deleted_at:number|null; version:number; reply_count?:number; resolved?:number; solution_method?:string; solution_steps?:string; solution_result?:string };
 type Kind = 'questions'|'replies';
 const API = process.env.NEXT_PUBLIC_FORUM_API_URL || '';
-const OWNER_KEY = 'kcis-forum-owner';
 const errors:Record<string,[string,string]> = {
   auth:['請先驗證校內信箱登入','Sign in with your school email first.'],
   solution:['請填寫解決方法、操作步驟與驗證結果','Enter the solution, steps and verification result.'],
@@ -33,11 +31,11 @@ export function Forum() {
   const accountToken=useRef('');accountToken.current=session?.token||'';
   const [solving,setSolving]=useState(false),[solutionMethod,setSolutionMethod]=useState(''),[solutionSteps,setSolutionSteps]=useState(''),[solutionResult,setSolutionResult]=useState('');
   const t=(zh:string,en:string)=>locale==='en'?en:zh;
-  const [enteredGuest,setEnteredGuest]=useState(false),[guestProfile,setGuestProfile]=useState<GuestProfile|null>(null);const entered=!!session||enteredGuest;
-  const name=session?.user.nickname||session?.user.name||guestProfile?.name||'',department=session?.user.department||guestProfile?.department||'';
+  const entered=!!session;
+  const name=session?.user.nickname||session?.user.name||'',department=session?.user.department||'';
   const [adminSession,setAdminSession]=useState<AdminSession|null>(null),[adminOpen,setAdminOpen]=useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
-  const lock=useRef(false),token=useRef('');
+  const lock=useRef(false);
   const [questions,setQuestions]=useState<Post[]>([]),[filter,setFilter]=useState('all'),[page,setPage]=useState(0);
   const [thread,setThread]=useState<Post|null>(null),[replies,setReplies]=useState<Post[]>([]),[moreReplies,setMoreReplies]=useState(false);
   const [draft,setDraft]=useState(''),[replyDraft,setReplyDraft]=useState('');
@@ -62,19 +60,9 @@ export function Forum() {
     window.scrollTo({top:0});
   },[threadId]);
 
-  useEffect(()=>{
-    try {
-      const profile=JSON.parse(sessionStorage.getItem('kcis-forum-profile')||'null');if(profile?.name&&profile?.department)setGuestProfile(profile);
-      token.current=localStorage.getItem(OWNER_KEY)||'';
-    } catch { /* Storage is optional; the current visit still works. */ }
-    if(!/^[a-f0-9]{64}$/.test(token.current)) {
-      token.current=Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('');
-      try{localStorage.setItem(OWNER_KEY,token.current);}catch{/* Keep the capability for this visit. */}
-    }
-  },[]);
   const api=useCallback(async(path:string,method='GET',body?:unknown,signal?:AbortSignal)=>{
     if(!API)throw Error('unavailable');
-    const response=await fetch(API+'/api'+path,{method,headers:{...(body!==undefined?{'Content-Type':'application/json'}:{}),...((accountToken.current||token.current)?{Authorization:'Bearer '+(accountToken.current||token.current)}:{})},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal});
+    const response=await fetch(API+'/api'+path,{method,headers:{...(body!==undefined?{'Content-Type':'application/json'}:{}),...(accountToken.current?{Authorization:'Bearer '+accountToken.current}:{})},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal});
     const data=await response.json();if(!response.ok)throw Error(data.error||'unavailable');return data;
   },[]);
 
@@ -132,16 +120,12 @@ export function Forum() {
     setSolving(false);setThread(null);setReplies([]);setEdit(null);setReplyDraft('');replyKey.current='';await loadQuestions();
   }
 
-  return <><SiteHeader allowGuest={enteredGuest} onGuestChange={profile=>{setGuestProfile(profile);if(!profile)setEnteredGuest(false);}} onManage={entered&&adminSession&&!adminOpen?()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}:undefined}/><div className={styles.forum} lang="en">
+  return <><SiteHeader onManage={entered&&adminSession&&!adminOpen?()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}:undefined}/><div className={styles.forum} lang="en">
     <main className={!entered?styles.entryWorkspace:thread?styles.threadWorkspace:styles.workspace} aria-busy={busy||!sessionReady}>
       {error&&!adminOpen&&<div role="alert" className={styles.error}><span>{errors[error]?.[locale==='en'?1:0]||t(errors.unavailable[0],errors.unavailable[1])}</span><button disabled={busy} onClick={()=>void run(async()=>{if(entered){if(thread)await fetchThread(thread.id);else await loadQuestions();}})}>{t('重新載入','Reload')}</button></div>}
       {!sessionReady?<p role="status" className={styles.empty}>Checking account…</p>:!entered?<section className={styles.entry} aria-labelledby="forum-entry-title">
         <div className={styles.entryHeading}><Icon name="message" /><h1 id="forum-entry-title">AI Forum</h1></div>
-        <form onSubmit={e=>submit(e,async()=>{if(!name.trim()||!department.trim())return;const profile={name:name.trim(),department:department.trim()};setGuestProfile(profile);try{sessionStorage.setItem('kcis-forum-profile',JSON.stringify(profile));}catch{}setEnteredGuest(true);})}>
-          <div className={styles.field}><label htmlFor="forum-name">Name</label><input id="forum-name" autoComplete="name" value={name} onChange={e=>setGuestProfile({name:e.target.value,department:guestProfile?.department||''})} maxLength={60} disabled={busy} required /></div>
-          <div className={styles.field}><label htmlFor="forum-department">Department</label><input id="forum-department" autoComplete="organization" placeholder="Student Affairs, English Department…" value={department} onChange={e=>setGuestProfile({name:guestProfile?.name||'',department:e.target.value})} maxLength={40} disabled={busy} required /></div>
-          <button className={styles.primary} disabled={busy||!name.trim()||!department.trim()}><span>Enter as guest</span><Icon name="forward" /></button>
-        </form>
+        <button type="button" className={styles.primary} onClick={()=>window.dispatchEvent(new Event('kcis:open-signin'))}><span>Sign in</span><Icon name="forward" /></button>
       </section>:adminOpen&&adminSession?<ForumAdmin apiBase={API} locale={locale} session={adminSession} onExpired={expireAdmin} onClose={()=>void run(async()=>{setAdminOpen(false);setSolving(false);setThread(null);setReplies([]);setEdit(null);await loadQuestions();})} />:<>
         <div className={styles.pageHeading}>
           <h1>{t('AI 論壇','AI Forum')}</h1>
