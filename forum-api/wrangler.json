@@ -8,7 +8,7 @@
   },
   "vars": {
     "ALLOWED_ORIGIN": "https://ai-tools.kcis.kainnne.com",
-    "WIKINB_API_URL": "https://george-classic-justify-interventions.trycloudflare.com",
+    "WIKINB_API_URL": "https://kcis-school-api.chaos60649.workers.dev",
     "ALLOWED_EMAIL_DOMAINS": "kcis.com.tw,kcis.ntpc.edu.tw",
     "EXTRA_ALLOWED_EMAILS": "chaos60649@gmail.com,st101031616@gmail.com"
   },
