@@ -182,6 +182,16 @@ export function NavigatorApp() {
                 variant: "purple",
                 href: wikiUrl,
               },
+              {
+                id: "videos",
+                index: "05",
+                monogram: "▶",
+                title: t.hub.videos.title,
+                description: "",
+                action: t.hub.videos.action,
+                variant: "light",
+                href: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/videos/`,
+              },
             ]}
           />
         ) : null}

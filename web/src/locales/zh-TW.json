@@ -40,6 +40,7 @@
     "otherHint": "用一句話說你想做什麼（會寫進提示詞；推薦仍依身分與單位）"
   },
   "hub": {
+    "videos": {"title": "AI 影片教學", "action": "觀看影片"},
     "wikinb": {"title": "WikiNB 康橋", "audience": "老師 · 學生", "action": "開啟筆記庫"},
     "forum": {"title": "AI 論壇", "audience": "老師", "action": "進入論壇"},
     "eyebrow": "康橋 AI 工具站",

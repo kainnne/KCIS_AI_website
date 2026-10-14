@@ -1,0 +1,21 @@
+.main {
+  width: min(100% - 2rem, 68rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4rem) 0;
+  color: var(--kc-blue-deep);
+}
+.main h1 { margin: 0 0 1.75rem; font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; }
+.main p { color: var(--kc-muted); margin: 0 0 1rem; }
+.button {
+  border: 1px solid rgba(75, 74, 141, .2);
+  border-radius: .85rem;
+  padding: .7rem 1.5rem;
+  background: #edeefa;
+  color: #383b78;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+.button:hover { background: #e2e4f6; box-shadow: 0 3px 12px rgba(56, 59, 120, .1); }
+.button:focus-visible { outline: 2px solid #5659a0; outline-offset: 4px; }
