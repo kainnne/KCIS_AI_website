@@ -54,7 +54,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
   }
   function draw() {
     const thread = threads.get(current) ?? [];
-    log.innerHTML = thread.length ? thread.map(m => `<div class="helper-msg ${m.role}${m.error ? ' error' : ''}">${m.role === 'assistant' ? render(m.content) : `<p>${esc(m.content)}</p>`}</div>`).join('') + (busy ? `<div class="helper-msg assistant typing"><span></span><span></span><span></span></div>` : '')
+    log.innerHTML = thread.length ? thread.map(m => `<div class="helper-msg ${m.role}${m.error ? ' error' : ''}">${m.role === 'assistant' ? render(m.content || '…') : `<p>${esc(m.content)}</p>`}${m.trace ? `<span class="helper-trace">${esc(t('helperTrace'))} ${esc(m.trace)}</span>` : ''}</div>`).join('') + (busy && thread.at(-1)?.role === 'user' ? `<div class="helper-msg assistant typing"><span></span><span></span><span></span></div>` : '')
       : `<p class="helper-empty">${esc(t('helperEmpty'))}</p>`;
     chips.hidden = thread.length > 0;
     log.scrollTop = log.scrollHeight;
@@ -70,17 +70,34 @@ export function mountHelper({apiBase, token, context, lang, t}) {
     if (!text || busy || !current) return;
     const thread = threads.get(current) ?? [];
     thread.push({role: 'user', content: text}); threads.set(current, thread);
-    busy = true; input.value = ''; draw();
-    const q = current;
+    busy = true; input.value = ''; input.style.height = 'auto'; draw();
+    const q = current, reply = {role: 'assistant', content: ''};
     try {
       const response = await fetch(`${apiBase}/api/assistant`, {method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({token: token() ?? undefined, questionId: q, lang: lang(), context: context(), messages: thread.filter(m => !m.error).slice(-8).map(({role, content}) => ({role, content}))})});
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'network');
-      thread.push({role: 'assistant', content: data.answer || t('helperEmptyAnswer')});
+        body: JSON.stringify({token: token() ?? undefined, questionId: q, site: location.hostname, lang: lang(), turn: thread.filter(m => m.role === 'user').length, context: context(),
+          messages: thread.filter(m => !m.error).slice(-8).map(({role, content}) => ({role, content}))})});
+      if (!response.ok || !(response.headers.get('Content-Type') || '').includes('event-stream')) {
+        const data = await response.json().catch(() => ({}));
+        throw Object.assign(new Error(data.error || 'network'), {trace: data.trace});
+      }
+      thread.push(reply); busy = false;
+      const reader = response.body.getReader(), dec = new TextDecoder(); let buffer = '', status = 'ok';
+      for (;;) {
+        const {value, done} = await reader.read(); if (done) break;
+        buffer += dec.decode(value, {stream: true}); let i;
+        while ((i = buffer.indexOf('\n\n')) >= 0) {
+          const line = buffer.slice(0, i).replace(/^data: /, ''); buffer = buffer.slice(i + 2);
+          let ev; try { ev = JSON.parse(line); } catch { continue; }
+          if (ev.type === 'start') reply.trace = ev.trace;
+          else if (ev.type === 'delta') { reply.content += ev.text; if (current === q) draw(); }
+          else if (ev.type === 'done') status = ev.status;
+        }
+      }
+      if (!reply.content) { reply.content = t(status === 'ok' ? 'helperEmptyAnswer' : 'helperError'); reply.error = status !== 'ok'; }
     } catch (err) {
-      const key = {rate_limited: 'helperLimit', daily_cap: 'helperCap', assistant_unavailable: 'helperOff'}[err.message] ?? 'helperError';
-      thread.push({role: 'assistant', content: t(key), error: true});
+      const key = {rate_limited: 'helperLimit', daily_cap: 'helperCap', person_cap: 'helperPersonCap', thread_limit: 'helperThread', assistant_unavailable: 'helperOff'}[err.message] ?? 'helperError';
+      if (!thread.includes(reply)) thread.push(reply);
+      reply.content = t(key); reply.error = true; reply.trace ??= err.trace;
     } finally {
       busy = false; if (current === q) draw();
     }

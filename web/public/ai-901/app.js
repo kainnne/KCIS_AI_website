@@ -1,9 +1,9 @@
-import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=16';
-import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=16';
-import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=16';
-import {unlockVault} from './vault.js?v=16';
-import {mountHelper} from './helper.js?v=16';
-import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=16';
+import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=18';
+import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=18';
+import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=18';
+import {unlockVault} from './vault.js?v=18';
+import {mountHelper} from './helper.js?v=18';
+import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=18';
 
 const main=document.querySelector('#main');
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -22,7 +22,7 @@ const langSwitch=()=>`<div class="lang-switch" role="group" aria-label="${t('lan
 function helperContext(){
  const q=session&&current();if(!q)return {};
  const text=qText(q,questionHeading(q)),en=lang()==='en';
- return {stem:text.stem,options:q.options?.map(o=>({key:o.key,text:text.option(o.key)})),rows:q.rows?.map((_,i)=>text.row(i)),learnerAnswer:(session.answers[q.id]??[]).join('、')||undefined,referenceAnswer:q.decoded_answer,explanation:en&&q.en?.explanation?q.en.explanation:q.lesson.paragraphs.join(' ')};
+ return {screen:q.set?`guided lab: ${q.set.en}`:`practice round (${session.unit})`,position:`${session.position+1} of ${session.questionIds.length}`,stem:text.stem,options:q.options?.map(o=>({key:o.key,text:text.option(o.key)})),rows:q.rows?.map((_,i)=>text.row(i)),learnerAnswer:(session.answers[q.id]??[]).join('、')||undefined,referenceAnswer:q.decoded_answer,explanation:en&&q.en?.explanation?q.en.explanation:q.lesson.paragraphs.join(' ')};
 }
 const helper=mountHelper({apiBase:ASSISTANT_API,token:()=>ACCOUNT_MODE?account()?.token:null,context:helperContext,lang,t});
 function applyChrome(){

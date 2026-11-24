@@ -262,6 +262,8 @@ main{padding-top:4px;padding-bottom:24px}
 @media (max-height:520px) and (orientation:landscape){.helper-panel{top:12px;bottom:12px;height:auto;left:auto;right:12px;width:min(380px,48vw);border-radius:22px}}
 @media (prefers-reduced-motion:reduce){.helper-panel,.helper-msg,.helper-msg.typing span{animation:none}}
 
+.helper-trace{display:block;margin-top:6px;font:500 10px/1 "DM Mono",ui-monospace,monospace;letter-spacing:.06em;color:#a48aa8}
+
 /* KCIS copy: school logo in place of the Kain3e wordmark */
 .header img.school-mark{width:154px;height:auto}
 @media(max-width:600px){.header img.school-mark{width:128px}}
