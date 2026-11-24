@@ -95,7 +95,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
       }
       if (!reply.content) { reply.content = t(status === 'ok' ? 'helperEmptyAnswer' : 'helperError'); reply.error = status !== 'ok'; }
     } catch (err) {
-      const key = {rate_limited: 'helperLimit', daily_cap: 'helperCap', person_cap: 'helperPersonCap', thread_limit: 'helperThread', assistant_unavailable: 'helperOff'}[err.message] ?? 'helperError';
+      const key = {paused: 'helperPaused', blocked: 'helperBlocked', rate_limited: 'helperLimit', daily_cap: 'helperCap', person_cap: 'helperPersonCap', thread_limit: 'helperThread', assistant_unavailable: 'helperOff'}[err.message] ?? 'helperError';
       if (!thread.includes(reply)) thread.push(reply);
       reply.content = t(key); reply.error = true; reply.trace ??= err.trace;
     } finally {
