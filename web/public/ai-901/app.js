@@ -1,14 +1,16 @@
-import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=15';
-import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=15';
-import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=15';
-import {unlockVault} from './vault.js?v=15';
-import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=15';
+import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=16';
+import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=16';
+import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=16';
+import {unlockVault} from './vault.js?v=16';
+import {mountHelper} from './helper.js?v=16';
+import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=16';
 
 const main=document.querySelector('#main');
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const AUTO_COUNT=20;
 // account mode (KCIS deployment): identity step + server mistake book. Local mode (default): shared code only, mistakes kept in this browser.
 const ACCOUNT_MODE=document.querySelector('meta[name="practice-mode"]')?.content==='account';
+const ASSISTANT_API=(document.querySelector('meta[name="assistant-api"]')?.content??'').replace(/\/$/,'');
 const LOCAL_MISTAKES='practice-mistakes';
 const readLocalMistakes=()=>{try{return JSON.parse(localStorage.getItem(LOCAL_MISTAKES))??[];}catch{return [];}};
 const writeLocalMistakes=ids=>{try{localStorage.setItem(LOCAL_MISTAKES,JSON.stringify(ids));}catch{}};
@@ -17,7 +19,14 @@ const button=(label,action,extra='')=>`<button type="button" data-action="${acti
 function icon(ok,hidden=true){return `<svg class="verdict-icon" viewBox="0 0 24 24" ${hidden?'aria-hidden="true"':`role="img" aria-label="${ok?t('isCorrect'):t('notCorrect')}"`}><path d="${ok?'M5 12l4 4L19 6':'M6 6l12 12M18 6L6 18'}"/></svg>`;}
 const clockIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 const langSwitch=()=>`<div class="lang-switch" role="group" aria-label="${t('language')}">${[['zh','中文'],['en','English']].map(([code,label])=>`<button type="button" data-lang="${code}" aria-pressed="${lang()===code}">${label}</button>`).join('')}</div>`;
+function helperContext(){
+ const q=session&&current();if(!q)return {};
+ const text=qText(q,questionHeading(q)),en=lang()==='en';
+ return {stem:text.stem,options:q.options?.map(o=>({key:o.key,text:text.option(o.key)})),rows:q.rows?.map((_,i)=>text.row(i)),learnerAnswer:(session.answers[q.id]??[]).join('、')||undefined,referenceAnswer:q.decoded_answer,explanation:en&&q.en?.explanation?q.en.explanation:q.lesson.paragraphs.join(' ')};
+}
+const helper=mountHelper({apiBase:ASSISTANT_API,token:()=>ACCOUNT_MODE?account()?.token:null,context:helperContext,lang,t});
 function applyChrome(){
+ helper.hide();
  document.documentElement.lang=lang()==='en'?'en':'zh-Hant';
  const notes=document.querySelector('.training-nav a[href="./notes/"]');if(notes)notes.textContent=t('notes');
 }
@@ -178,7 +187,7 @@ function revealAnswer(){
 }
 function quiz(){
  screen=quiz;applyChrome();
- const q=current();session.revealed=false;session.viewStartedAt=session.attempts[q.id]?null:Date.now();
+ const q=current();helper.show();helper.question(q.id);session.revealed=false;session.viewStartedAt=session.attempts[q.id]?null:Date.now();
  main.innerHTML=`<div class="quiz-bar">${button(t('home'),'home','class="text-button"')}<div class="quiz-status"><span class="position">${session.position+1}<span> / ${session.questionIds.length}</span></span><div class="timer">${clockIcon}<time id="elapsed"></time></div><span id="pace" class="pace" hidden></span></div></div><progress class="quiz-progress" value="${session.position+1}" max="${session.questionIds.length}" aria-label="${t('progress')}"></progress><article class="question" data-question-id="${escape(q.id)}">${q.set?`<p class="lab-step"><span>${escape(t('stepOf',session.position+1,session.questionIds.length))}</span>${escape(lang()==='en'?q.set.en:q.set.zh)}</p>`:''}<h1 class="stem">${escape(qText(q,questionHeading(q)).stem)}</h1><div id="attempt-state" class="attempt-state" role="status" aria-live="polite" hidden></div>${q.type==='multiple'?`<span class="selection-count">${t('selectN',q.answerCount)}</span>`:''}<div class="answer-inputs">${answerInputs(q)}</div>${button(session.attempts[q.id]?t('viewExplanation'):t('reveal'),'reveal','id="answer-toggle" class="answer-toggle" aria-controls="explanation" aria-expanded="false"')}${explanation(q)}<div class="question-nav">${button(t('previous'),'previous',`${session.position===0?'disabled':''}`)}${button(session.position===session.questionIds.length-1?t('finish'):t('next'),'next','class="primary"')}</div></article>`;
  main.querySelector('.answer-inputs').addEventListener('change',event=>{
   const input=event.target;if(!input.matches('input,select')||session.attempts[q.id])return;

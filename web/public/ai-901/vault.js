@@ -2,7 +2,7 @@ function bytes(base64) {return Uint8Array.from(atob(base64),c=>c.charCodeAt(0));
 // Banks are gzip-compressed before encryption. Browsers without DecompressionStream (e.g. iOS 15) load a 4 KB inflater.
 async function gunzip(data) {
   if (typeof DecompressionStream === 'function') return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
-  const {gunzipSync} = await import('./fflate-gunzip.js?v=15');
+  const {gunzipSync} = await import('./fflate-gunzip.js?v=16');
   return gunzipSync(data);
 }
 export async function unlockVault(pin, envelope) {
