@@ -192,6 +192,16 @@ export function NavigatorApp() {
                 variant: "light",
                 href: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/videos/`,
               },
+              {
+                id: "ai901",
+                index: "06",
+                monogram: "A",
+                title: t.hub.ai901.title,
+                description: "",
+                action: t.hub.ai901.action,
+                variant: "dark",
+                href: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/ai-901/`,
+              },
             ]}
           />
         ) : null}
