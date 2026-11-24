@@ -10,22 +10,22 @@ export default {
     extend: {
       colors: {
         kc: {
-          blue: "#1b4f9c",
-          "blue-deep": "#0e2f66",
-          "blue-soft": "#4f7ec8",
-          purple: "#6b3d9a",
-          "purple-deep": "#4a256e",
-          "purple-soft": "#8f6bb8",
-          mist: "#f4f1fa",
-          ink: "#1a1d2e",
-          muted: "#5c6478",
+          ink: "#2e0f38",
+          muted: "#5b3b66",
+          faint: "#8d7395",
+          paper: "#fbf2f6",
+          rose: "#c8306b",
+          violet: "#6a46c8",
+          plum: "#7b2f8f",
+          kcis: "#900080",
+          teal: "#0098a0",
         },
       },
       maxWidth: {
         reading: "42rem",
       },
       boxShadow: {
-        soft: "0 10px 30px rgba(14, 47, 102, 0.08)",
+        soft: "0 26px 80px rgba(200, 48, 107, 0.13)",
       },
     },
   },

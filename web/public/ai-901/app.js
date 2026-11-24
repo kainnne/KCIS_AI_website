@@ -1,8 +1,8 @@
-import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js';
-import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js';
-import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js';
-import {unlockVault} from './vault.js';
-import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js';
+import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=14';
+import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=14';
+import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=14';
+import {unlockVault} from './vault.js?v=14';
+import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=14';
 
 const main=document.querySelector('#main');
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -12,7 +12,7 @@ const ACCOUNT_MODE=document.querySelector('meta[name="practice-mode"]')?.content
 const LOCAL_MISTAKES='practice-mistakes';
 const readLocalMistakes=()=>{try{return JSON.parse(localStorage.getItem(LOCAL_MISTAKES))??[];}catch{return [];}};
 const writeLocalMistakes=ids=>{try{localStorage.setItem(LOCAL_MISTAKES,JSON.stringify(ids));}catch{}};
-let bank,byId,session,unit='all',count=AUTO_COUNT,customCount=false,customMode=false,busy=false,mistakeIds=[],screen=login;
+let bank,byId,session,unit='all',track='all',count=AUTO_COUNT,customCount=false,customMode=false,busy=false,mistakeIds=[],screen=login;
 const button=(label,action,extra='')=>`<button type="button" data-action="${action}" ${extra}>${label}</button>`;
 function icon(ok,hidden=true){return `<svg class="verdict-icon" viewBox="0 0 24 24" ${hidden?'aria-hidden="true"':`role="img" aria-label="${ok?t('isCorrect'):t('notCorrect')}"`}><path d="${ok?'M5 12l4 4L19 6':'M6 6l12 12M18 6L6 18'}"/></svg>`;}
 const clockIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
@@ -103,19 +103,23 @@ async function enterHome(){
 
 /* Step 3: practice */
 function home(){
- screen=home;applyChrome();leaveQuestion();session=null;const rec=suggestedUnit(bank.units);const max=questionLimit(bank,unit);count=customCount?questionCount(count,max):Math.min(AUTO_COUNT,max);const me=ACCOUNT_MODE?account():null;
- main.innerHTML=`<section class="setup">${langSwitch()}<h1>AI-901</h1>${me?`<div class="account-bar"><span>${escape(t('signedIn',me.id))}</span>${button(t('signOut'),'sign-out','class="text-button"')}</div>`:''}${mistakeIds.length?button(t('mistakes',mistakeIds.length),'mistakes','class="mistakes-button"'):''}${customMode?`<div class="setup-field"><label for="category">${t('category')}</label><select id="category"><option value="all" ${unit==='all'?'selected':''}>${t('allQuestions')}</option>${bank.units.map(u=>`<option value="${escape(u.unit)}" ${unit===u.unit?'selected':''}>${escape(u.unit)} · ${escape(unitName(u))}</option>`).join('')}</select></div><div class="count-auto" ${customCount?'hidden':''}><span id="auto-count">${t('autoCount',Math.min(AUTO_COUNT,max))}</span>${button(t('customCount'),'custom-count','class="text-button"')}</div><div class="count-field" ${customCount?'':'hidden'}><div class="count-heading"><label for="question-count">${t('count')}</label><div class="count-value"><input id="question-count" type="number" min="5" max="${max}" step="1" value="${count}" inputmode="numeric"><span>${t('countUnit')}</span></div></div><input id="count-slider" type="range" min="5" max="${max}" step="1" value="${count}" aria-label="${t('count')}"><div class="range-ends" aria-hidden="true"><span>5</span><span id="count-max">${max}</span></div>${button(t('useAuto'),'auto-count','class="text-button"')}</div>${button(t('start'),'start','class="primary"')}${button(t('backToSuggested'),'suggested','class="text-button"')}`:`<div class="suggest card-like"><p class="suggest-label">${t('suggested')}</p><p class="suggest-unit"><span>${escape(rec.unit.unit)}</span>${escape(unitName(rec.unit))}</p>${rec.done?`<p class="note">${t('allPassed')}</p>`:''}<p class="suggest-count">${t('autoCount',Math.min(AUTO_COUNT,questionLimit(bank,rec.unit.unit)))}</p>${button(t('start'),'start-suggested','class="primary"')}</div>${button(t('custom'),'custom','class="text-button custom-toggle"')}`}</section>`;
+ screen=home;applyChrome();leaveQuestion();session=null;const rec=suggestedUnit(bank.units);const max=questionLimit(bank,unit,track);const labs=bank.labs??[];count=customCount?questionCount(count,max):Math.min(AUTO_COUNT,max);const me=ACCOUNT_MODE?account():null;
+ main.innerHTML=`<section class="setup">${langSwitch()}<h1>AI-901</h1>${me?`<div class="account-bar"><span>${escape(t('signedIn',me.id))}</span>${button(t('signOut'),'sign-out','class="text-button"')}</div>`:''}${mistakeIds.length?button(t('mistakes',mistakeIds.length),'mistakes','class="mistakes-button"'):''}${customMode?`<div class="setup-field"><label for="category">${t('category')}</label><select id="category"><option value="all" ${unit==='all'?'selected':''}>${t('allQuestions')}</option>${bank.units.map(u=>`<option value="${escape(u.unit)}" ${unit===u.unit?'selected':''}>${escape(u.unit)} · ${escape(unitName(u))}</option>`).join('')}</select></div><div class="setup-field"><label for="track">${t('track')}</label><select id="track">${[['all','trackAll'],['concept','trackConcept'],['hands-on','trackHands']].map(([v,k])=>`<option value="${v}" ${track===v?'selected':''}>${t(k)}</option>`).join('')}</select></div><div class="count-auto" ${customCount?'hidden':''}><span id="auto-count">${t('autoCount',Math.min(AUTO_COUNT,max))}</span>${button(t('customCount'),'custom-count','class="text-button"')}</div><div class="count-field" ${customCount?'':'hidden'}><div class="count-heading"><label for="question-count">${t('count')}</label><div class="count-value"><input id="question-count" type="number" min="5" max="${max}" step="1" value="${count}" inputmode="numeric"><span>${t('countUnit')}</span></div></div><input id="count-slider" type="range" min="5" max="${max}" step="1" value="${count}" aria-label="${t('count')}"><div class="range-ends" aria-hidden="true"><span>5</span><span id="count-max">${max}</span></div>${button(t('useAuto'),'auto-count','class="text-button"')}</div>${button(t('start'),'start','class="primary"')}${button(t('backToSuggested'),'suggested','class="text-button"')}`:`<div class="suggest card-like"><p class="suggest-label">${t('suggested')}</p><p class="suggest-unit"><span>${escape(rec.unit.unit)}</span>${escape(unitName(rec.unit))}</p>${rec.done?`<p class="note">${t('allPassed')}</p>`:''}<p class="suggest-count">${t('autoCount',Math.min(AUTO_COUNT,questionLimit(bank,rec.unit.unit)))}</p>${button(t('start'),'start-suggested','class="primary"')}</div>${button(t('custom'),'custom','class="text-button custom-toggle"')}${labs.length?`<section class="labs" aria-labelledby="labs-title"><div class="labs-head"><h2 id="labs-title">${t('labs')}</h2><p class="note">${t('labsNote')}</p></div><ol class="lab-list">${labs.map((l,i)=>`<li><button type="button" class="lab-item" data-action="lab" data-lab="${escape(l.id)}"><span class="lab-index">${String(i+1).padStart(2,'0')}</span><span class="lab-name">${escape(lang()==='en'?l.en:l.zh)}</span><span class="lab-count">${t('steps',l.questionIds.length)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>`).join('')}</ol></section>`:''}`}</section>`;
  if(!customMode)return;
  const number=main.querySelector('#question-count'),slider=main.querySelector('#count-slider');
  function sync(value){count=questionCount(value,Number(number.max));number.value=count;slider.value=count;}
  slider.addEventListener('input',()=>sync(slider.value));number.addEventListener('change',()=>sync(number.value));
- main.querySelector('#category').addEventListener('change',event=>{unit=event.target.value;const max=questionLimit(bank,unit);number.max=slider.max=max;main.querySelector('#count-max').textContent=max;main.querySelector('#auto-count').textContent=t('autoCount',Math.min(AUTO_COUNT,max));sync(customCount?number.value:AUTO_COUNT);});
+ const refit=()=>{const max=questionLimit(bank,unit,track);number.max=slider.max=max;main.querySelector('#count-max').textContent=max;main.querySelector('#auto-count').textContent=t('autoCount',Math.min(AUTO_COUNT,max));sync(customCount?number.value:AUTO_COUNT);};
+ main.querySelector('#track').addEventListener('change',event=>{track=event.target.value;refit();});
+ main.querySelector('#category').addEventListener('change',event=>{unit=event.target.value;const max=questionLimit(bank,unit,track);number.max=slider.max=max;main.querySelector('#count-max').textContent=max;main.querySelector('#auto-count').textContent=t('autoCount',Math.min(AUTO_COUNT,max));sync(customCount?number.value:AUTO_COUNT);});
 }
 function begin(questionIds,sessionUnit){session={questionIds,position:0,answers:{},attempts:{},unit:sessionUnit,startedAt:Date.now(),finishedAt:null,elapsedById:{},samples:{},viewStartedAt:null,revealed:false,synced:false};quiz();}
 function start(){
- unit=main.querySelector('#category')?.value??unit;
- count=customCount?questionCount(main.querySelector('#question-count')?.value??count,questionLimit(bank,unit)):Math.min(AUTO_COUNT,questionLimit(bank,unit));
- begin(selectQuestions(bank,{unit,count}),unit);
+ const labRun=session?.unit?.startsWith?.('lab:')&&(bank.labs??[]).find(l=>'lab:'+l.id===session.unit);
+ if(labRun){begin(selectQuestions(bank,{mode:'lab',ids:labRun.questionIds}),session.unit);return;}
+ unit=main.querySelector('#category')?.value??unit;track=main.querySelector('#track')?.value??track;
+ count=customCount?questionCount(main.querySelector('#question-count')?.value??count,questionLimit(bank,unit,track)):Math.min(AUTO_COUNT,questionLimit(bank,unit,track));
+ begin(selectQuestions(bank,{unit,count,track}),unit);
 }
 function startMistakes(){if(mistakeIds.length)begin(selectQuestions(bank,{mode:'mistakes',ids:mistakeIds,count:Math.min(100,mistakeIds.length)}),'mistakes');else home();}
 function current(){return byId.get(session.questionIds[session.position]);}
@@ -137,11 +141,16 @@ function definitionSection(entries){
  if(!entries.length)return '';
  return `<details class="definition-section"><summary><strong>${t('glossary')}</strong></summary><div class="definition-list">${entries.map(entry=>`<section class="definition-entry"><h3>${entry.optionKeys.filter(key=>/^[A-Z]$/.test(key)).map(key=>`<span class="definition-key">${escape(key)}</span> `).join('')}${escape(entry.name)}</h3><p>${escape(entry.definition)}</p></section>`).join('')}</div></details>`;
 }
+function practiceBlock(q){
+ const steps=(lang()==='en'?q.en?.practice:null)??q.practice;
+ if(!steps?.length)return '';
+ return `<section class="practice-steps"><h3>${t('practiceSteps')}</h3><ol>${steps.map(s=>`<li>${escape(s)}</li>`).join('')}</ol>${q.labUrl?`<a class="lab-link" href="${escape(q.labUrl)}" target="_blank" rel="noopener">${t('openLab')}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>`:''}</section>`;
+}
 function explanation(q){
  const zh=`<div class="reason" lang="zh-Hant">${q.lesson.paragraphs.map(paragraph=>`<p>${escape(paragraph)}</p>`).join('')}</div>`;
  const glossary=q.lesson.glossary.length?`<div class="definition-panels" lang="zh-Hant">${definitionSection(q.lesson.glossary)}</div>`:'';
- if(lang()==='en'&&q.en?.explanation)return `<section class="explanation" id="explanation" hidden><h2>${t('explanation')}</h2><div class="reason"><p>${escape(q.en.explanation)}</p></div><details class="definition-section full-zh"><summary><strong>${t('fullZh')}</strong></summary>${zh}</details>${glossary}</section>`;
- return `<section class="explanation" id="explanation" lang="zh-Hant" hidden><h2>${t('explanation')}</h2>${zh}${glossary}</section>`;
+ if(lang()==='en'&&q.en?.explanation)return `<section class="explanation" id="explanation" hidden><h2>${t('explanation')}</h2><div class="reason"><p>${escape(q.en.explanation)}</p></div>${practiceBlock(q)}<details class="definition-section full-zh"><summary><strong>${t('fullZh')}</strong></summary>${zh}</details>${glossary}</section>`;
+ return `<section class="explanation" id="explanation" lang="zh-Hant" hidden><h2>${t('explanation')}</h2>${zh}${practiceBlock(q)}${glossary}</section>`;
 }
 function renderVerdicts(){
  const q=current(),record=session.attempts[q.id],visible=!!record,text=qText(q);
@@ -170,7 +179,7 @@ function revealAnswer(){
 function quiz(){
  screen=quiz;applyChrome();
  const q=current();session.revealed=false;session.viewStartedAt=session.attempts[q.id]?null:Date.now();
- main.innerHTML=`<div class="quiz-bar">${button(t('home'),'home','class="text-button"')}<div class="quiz-status"><span class="position">${session.position+1}<span> / ${session.questionIds.length}</span></span><div class="timer">${clockIcon}<time id="elapsed"></time></div><span id="pace" class="pace" hidden></span></div></div><progress class="quiz-progress" value="${session.position+1}" max="${session.questionIds.length}" aria-label="${t('progress')}"></progress><article class="question" data-question-id="${escape(q.id)}"><h1 class="stem">${escape(qText(q,questionHeading(q)).stem)}</h1><div id="attempt-state" class="attempt-state" role="status" aria-live="polite" hidden></div>${q.type==='multiple'?`<span class="selection-count">${t('selectN',q.answerCount)}</span>`:''}<div class="answer-inputs">${answerInputs(q)}</div>${button(session.attempts[q.id]?t('viewExplanation'):t('reveal'),'reveal','id="answer-toggle" class="answer-toggle" aria-controls="explanation" aria-expanded="false"')}${explanation(q)}<div class="question-nav">${button(t('previous'),'previous',`${session.position===0?'disabled':''}`)}${button(session.position===session.questionIds.length-1?t('finish'):t('next'),'next','class="primary"')}</div></article>`;
+ main.innerHTML=`<div class="quiz-bar">${button(t('home'),'home','class="text-button"')}<div class="quiz-status"><span class="position">${session.position+1}<span> / ${session.questionIds.length}</span></span><div class="timer">${clockIcon}<time id="elapsed"></time></div><span id="pace" class="pace" hidden></span></div></div><progress class="quiz-progress" value="${session.position+1}" max="${session.questionIds.length}" aria-label="${t('progress')}"></progress><article class="question" data-question-id="${escape(q.id)}">${q.set?`<p class="lab-step"><span>${escape(t('stepOf',session.position+1,session.questionIds.length))}</span>${escape(lang()==='en'?q.set.en:q.set.zh)}</p>`:''}<h1 class="stem">${escape(qText(q,questionHeading(q)).stem)}</h1><div id="attempt-state" class="attempt-state" role="status" aria-live="polite" hidden></div>${q.type==='multiple'?`<span class="selection-count">${t('selectN',q.answerCount)}</span>`:''}<div class="answer-inputs">${answerInputs(q)}</div>${button(session.attempts[q.id]?t('viewExplanation'):t('reveal'),'reveal','id="answer-toggle" class="answer-toggle" aria-controls="explanation" aria-expanded="false"')}${explanation(q)}<div class="question-nav">${button(t('previous'),'previous',`${session.position===0?'disabled':''}`)}${button(session.position===session.questionIds.length-1?t('finish'):t('next'),'next','class="primary"')}</div></article>`;
  main.querySelector('.answer-inputs').addEventListener('change',event=>{
   const input=event.target;if(!input.matches('input,select')||session.attempts[q.id])return;
   let answers=[...(session.answers[q.id]??[])];
@@ -202,7 +211,7 @@ function finish(){
  syncMistakes();
  if(!session.progressSaved){session.progressSaved=true;recordProgress(session.unit,summarizeAttempts(session,byId));}
  const report=summarizeAttempts(session,byId),feedback=readinessText(readinessFeedback(report,session.unit==='mistakes'?'all':session.unit),report);
- main.innerHTML=`<section class="finish result"><h1>${t('firstTry')}<span class="result-total">${t('total',report.total)}</span></h1><div class="result-rate">${report.percent}<span>%</span></div><div class="result-stats"><div class="correct">${icon(true)}<strong>${report.correct}</strong><span>${t('correct')}</span></div><div class="wrong">${icon(false)}<strong>${report.wrong}</strong><span>${t('wrong')}</span></div><div class="unknown"><span aria-hidden="true" class="unknown-icon">?</span><strong>${report.unknown}</strong><span>${t('unknown')}</span></div></div><div class="finish-time">${clockIcon}<time id="elapsed"></time></div><section class="readiness"><h2>${escape(feedback.title)}</h2><p>${escape(feedback.text)}</p></section>${session.unit==='mistakes'?(mistakeIds.length?button(t('mistakes',mistakeIds.length),'mistakes','class="primary"'):''):button(t('retry',count),'start','class="primary"')}<div class="finish-actions">${button(t('review'),'review','class="text-button"')}${button(t('home'),'home','class="text-button"')}</div></section>`;updateClock();
+ main.innerHTML=`<section class="finish result"><h1>${t('firstTry')}<span class="result-total">${t('total',report.total)}</span></h1><div class="result-rate">${report.percent}<span>%</span></div><div class="result-stats"><div class="correct">${icon(true)}<strong>${report.correct}</strong><span>${t('correct')}</span></div><div class="wrong">${icon(false)}<strong>${report.wrong}</strong><span>${t('wrong')}</span></div><div class="unknown"><span aria-hidden="true" class="unknown-icon">?</span><strong>${report.unknown}</strong><span>${t('unknown')}</span></div></div><div class="finish-time">${clockIcon}<time id="elapsed"></time></div><section class="readiness"><h2>${escape(feedback.title)}</h2><p>${escape(feedback.text)}</p></section>${session.unit==='mistakes'?(mistakeIds.length?button(t('mistakes',mistakeIds.length),'mistakes','class="primary"'):''):button(t('retry',session.unit.startsWith('lab:')?session.questionIds.length:count),'start','class="primary"')}<div class="finish-actions">${button(t('review'),'review','class="text-button"')}${button(t('home'),'home','class="text-button"')}</div></section>`;updateClock();
 }
 main.addEventListener('click',event=>{
  const switcher=event.target.closest('[data-lang]');
@@ -215,6 +224,7 @@ main.addEventListener('click',event=>{
  if(action==='confirm-id'){checkAccount();return;}
  if(action==='sign-out'){clearAccount();mistakeIds=[];identity();return;}
  if(action==='custom'||action==='suggested'){customMode=action==='custom';home();return;}
+ if(action==='lab'){const l=(bank.labs??[]).find(x=>x.id===event.target.closest('[data-lab]').dataset.lab);if(l){begin(selectQuestions(bank,{mode:'lab',ids:l.questionIds}),'lab:'+l.id);main.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}return;}
  if(action==='start-suggested'){const rec=suggestedUnit(bank.units);unit=rec.unit.unit;count=Math.min(AUTO_COUNT,questionLimit(bank,unit));begin(selectQuestions(bank,{unit,count}),unit);main.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});return;}
  if(action==='custom-count'||action==='auto-count'){customCount=action==='custom-count';home();if(customCount)main.querySelector('#question-count')?.focus();return;}
  if(action==='home')home();else if(action==='start')start();else if(action==='mistakes')startMistakes();

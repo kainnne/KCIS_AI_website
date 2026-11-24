@@ -2,7 +2,6 @@
 // Pencil castle on the ridge, contour-line mountains with the hiking trail, a watercolor lake with the swim route,
 // ink cherry branches with watercolor blossoms and falling petals, a watercolor concert hall with an ink piano,
 // a risograph archery target, a blueprint library and lab, ink birds. All layers multiply onto the paper.
-import * as THREE from './three.module.min.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const small = matchMedia('(max-width: 760px)').matches;
@@ -312,7 +311,6 @@ float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
 float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*vn(p);p*=2.03;a*=.5;}return s;}`;
 const VERT = `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
-const MULTIPLY = {blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.DstColorFactor, blendDst: THREE.ZeroFactor, transparent: true, depthTest: false, depthWrite: false};
 
 const PENCIL = `${NOISE}
 uniform sampler2D uInk,uOrd; uniform vec3 uCol; uniform float uProg,uOpacity,uGrain; varying vec2 vUv;
@@ -409,7 +407,197 @@ void main(){
 const BIRD_V = `attribute float aPhase; varying vec2 vUv; varying float vPhase;
 void main(){vUv=uv;vPhase=aPhase;gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.);}`;
 
-/* ---------- scene ---------- */
+/* ---------- WebGL ---------- */
+function vector(x, y, z) {
+  return {x, y, z, set(x, y, z) { this.x = x; this.y = y; this.z = z; },
+    setScalar(s) { this.set(s, s, s); }};
+}
+function transform() {
+  const position = vector(0, 0, 0), rotation = vector(0, 0, 0), scale = vector(1, 1, 1), matrix = new Float64Array(16);
+  return {position, rotation, scale, matrix, updateMatrix() {
+    // XYZ Euler rotation, composed as a quaternion as in the original.
+    const {x, y, z} = rotation;
+    const a = Math.cos(x / 2), b = Math.cos(y / 2), c = Math.cos(z / 2);
+    const d = Math.sin(x / 2), e = Math.sin(y / 2), f = Math.sin(z / 2);
+    const qx = d*b*c + a*e*f, qy = a*e*c - d*b*f, qz = a*b*f + d*e*c, qw = a*b*c - d*e*f;
+    const xx = qx*(2*qx), yy = qy*(2*qy), zz = qz*(2*qz), xy = qx*(2*qy), xz = qx*(2*qz), yz = qy*(2*qz);
+    const wx = qw*(2*qx), wy = qw*(2*qy), wz = qw*(2*qz), sx = scale.x, sy = scale.y, sz = scale.z;
+    matrix.set([(1-(yy+zz))*sx, (xy+wz)*sx, (xz-wy)*sx, 0,
+      (xy-wz)*sy, (1-(xx+zz))*sy, (yz+wx)*sy, 0,
+      (xz+wy)*sz, (yz-wx)*sz, (1-(xx+yy))*sz, 0, position.x, position.y, position.z, 1]);
+  }};
+}
+function perspective(D) {
+  const position = vector(0, 0, D), projection = new Float32Array(16), view = new Float64Array(16);
+  const near = .1, far = 50, top = near * Math.tan(15 * Math.PI / 180);
+  projection[5] = near / top; projection[10] = -(far + near) / (far - near);
+  projection[11] = -1; projection[14] = -2 * far * near / (far - near);
+  return {position, projection, view, aspect: 1, updateProjectionMatrix() {
+    projection[0] = near / (top * this.aspect);
+  }, lookAt(x, y, z) {
+    const {x: px, y: py, z: pz} = position, dx = px - x, dy = py - y, dz = pz - z;
+    const length = Math.hypot(dx, dy, dz), horizontal = Math.hypot(dx, dz);
+    const zx = dx / length, zy = dy / length, zz = dz / length;
+    const rx = dz / horizontal, rz = -dx / horizontal;
+    const ux = zy * rz, uy = zz * rx - zx * rz, uz = -zy * rx;
+    view.set([rx, ux, zx, 0, 0, uy, zy, 0, rz, uz, zz, 0,
+      -rx*px-rz*pz, -ux*px-uy*py-uz*pz, -zx*px-zy*py-zz*pz, 1]);
+  }};
+}
+// The original converts hex colors from sRGB to linear RGB before uploading uniforms.
+function color(hex) {
+  const rgb = parseInt(hex.slice(1), 16);
+  return vector(...[16, 8, 0].map(shift => {
+    const c = ((rgb >> shift) & 255) / 255;
+    return c < .04045 ? .0773993808 * c : Math.pow(.9478672986 * c + .0521327014, 2.4);
+  }));
+}
+
+function createRenderer(canvas, ratio) {
+  const options = {alpha: false, antialias: true, powerPreference: 'high-performance'};
+  const gl2 = canvas.getContext('webgl2', options);
+  const gl = gl2 || canvas.getContext('webgl', options);
+  if (!gl || (!gl2 && !gl.getExtension('OES_standard_derivatives'))) return null;
+
+  const angle = !gl2 && gl.getExtension('ANGLE_instanced_arrays');
+  const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+  const anisotropy = aniso && Math.min(4, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
+  const highp = gl2 || gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT).precision;
+  const p = highp ? 'highp' : 'mediump';
+  const precision = `precision ${p} float; precision ${p} int; precision ${p} sampler2D;\n`;
+  const version = gl2 ? '#version 300 es\n' : '';
+  const programs = new Map(), textures = new WeakMap(), mv = new Float32Array(16);
+  mv[15] = 1;
+
+  function data(target, values) {
+    gl.bindBuffer(target, gl.createBuffer());
+    gl.bufferData(target, values, gl.STATIC_DRAW);
+  }
+  function attribute(index, size, stride, offset) {
+    gl.enableVertexAttribArray(index);
+    gl.vertexAttribPointer(index, size, gl.FLOAT, false, stride, offset);
+  }
+  // The UVs at the four vertices are exactly position.xy + 0.5.
+  data(gl.ARRAY_BUFFER, new Float32Array([-.5,.5, .5,.5, -.5,-.5, .5,-.5]));
+  attribute(0, 2, 0, 0);
+  data(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array([0, 2, 1, 2, 3, 1]));
+  gl.enable(gl.CULL_FACE);
+  gl.depthMask(false);
+  gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+
+  function bindTexture(image, slot) {
+    gl.activeTexture(gl.TEXTURE0 + slot);
+    const cached = textures.get(image), texture = cached || gl.createTexture(), target = gl.TEXTURE_2D;
+    gl.bindTexture(target, texture);
+    if (cached) return;
+    textures.set(image, texture);
+    gl.texImage2D(target, 0, gl2 ? gl.RGBA8 : gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    const pot = n => (n & (n - 1)) === 0;
+    const mip = gl2 || (pot(image.width) && pot(image.height));
+    gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+    if (mip) gl.generateMipmap(target);
+    if (aniso) gl.texParameterf(target, aniso.TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+  }
+
+  function program({fragment, vertex, uniforms}) {
+    const cached = programs.get(fragment);
+    if (cached) return cached;
+    const handle = gl.createProgram();
+    const vert = gl2 ? '#define attribute in\n#define varying out\n' : '';
+    const frag = gl2 ? '#define varying in\n#define texture2D texture\n#define gl_FragColor result\nout highp vec4 result;\n' :
+      '#extension GL_OES_standard_derivatives : enable\n';
+    const inputs = 'attribute vec3 position; attribute mat4 instanceMatrix;\nuniform mat4 projectionMatrix, modelViewMatrix;\n#define uv (position.xy + 0.5)\n';
+    const transpose = gl2 ? '' : 'mat2 transpose(mat2 m){return mat2(m[0][0],m[1][0],m[0][1],m[1][1]);}\n';
+    function attach(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, version + source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS) && !gl.isContextLost()) {
+        throw new Error(gl.getShaderInfoLog(shader));
+      }
+      gl.attachShader(handle, shader);
+      gl.deleteShader(shader);
+    }
+    attach(gl.VERTEX_SHADER, vert + precision + inputs + vertex);
+    attach(gl.FRAGMENT_SHADER, frag + precision + transpose + fragment);
+    gl.bindAttribLocation(handle, 0, 'position');
+    gl.bindAttribLocation(handle, 1, 'instanceMatrix');
+    gl.bindAttribLocation(handle, 5, vertex === PETAL_V ? 'aTint' : 'aPhase');
+    gl.linkProgram(handle);
+    if (gl.isContextLost()) return null;
+    if (!gl.getProgramParameter(handle, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(handle));
+    const loc = name => gl.getUniformLocation(handle, name);
+    const state = {handle, projection: loc('projectionMatrix'), modelView: loc('modelViewMatrix'),
+      uniforms: Object.keys(uniforms).map(name => [name, loc(name)])};
+    programs.set(fragment, state);
+    return state;
+  }
+
+  const draw = () => gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0);
+  const divisor = (index, step) => gl2 ? gl.vertexAttribDivisor(index, step) : angle.vertexAttribDivisorANGLE(index, step);
+  function drawInstances(mesh) {
+    const {instances, count} = mesh;
+    if (!gl2 && !angle) {
+      for (let i = 0; i < instances.length; i += 17) {
+        for (let j = 0; j < 4; j++) gl.vertexAttrib4fv(j + 1, instances.subarray(i + j * 4, i + j * 4 + 4));
+        gl.vertexAttrib1f(5, instances[i + 16]);
+        draw();
+      }
+      return;
+    }
+    mesh.buffer ||= gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, instances, gl.DYNAMIC_DRAW);
+    for (let i = 0; i < 5; i++) {
+      attribute(i + 1, i === 4 ? 1 : 4, 68, i * 16);
+      divisor(i + 1, 1);
+    }
+    if (gl2) gl.drawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0, count);
+    else angle.drawElementsInstancedANGLE(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0, count);
+    for (let i = 1; i <= 5; i++) {
+      gl.disableVertexAttribArray(i);
+      divisor(i, 0);
+    }
+  }
+
+  return {setSize(w, h) {
+    const width = Math.floor(w * ratio), height = Math.floor(h * ratio);
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  }, render(scene, camera) {
+    if (gl.isContextLost()) return;
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    for (const mesh of scene) {
+      if (!mesh.visible) continue;
+      const {material} = mesh, state = program(material);
+      if (!state) return;
+      gl.useProgram(state.handle);
+      if (material.multiply) gl.enable(gl.BLEND); else gl.disable(gl.BLEND);
+      mesh.updateMatrix();
+      const m = mesh.matrix, v = camera.view;
+      for (let i = 0; i < 16; i += 4) for (let j = 0; j < 3; j++) {
+        mv[i + j] = v[j]*m[i] + v[j+4]*m[i+1] + v[j+8]*m[i+2] + v[j+12]*m[i+3];
+      }
+      gl.uniformMatrix4fv(state.projection, false, camera.projection);
+      gl.uniformMatrix4fv(state.modelView, false, mv);
+      let unit = 0;
+      for (const [name, loc] of state.uniforms) {
+        const v = material.uniforms[name].value;
+        if (typeof v === 'number') gl.uniform1f(loc, v);
+        else if (v.getContext) { bindTexture(v, unit); gl.uniform1i(loc, unit++); }
+        else if (v.z === undefined) gl.uniform2f(loc, v.x, v.y);
+        else gl.uniform3f(loc, v.x, v.y, v.z);
+      }
+      if (mesh.instances) drawInstances(mesh); else draw();
+    }
+  }};
+}
+
 /* ---------- variants ---------- */
 // entry: kcis.kainnne.com, words and cards on the left, the sketchbook on the right.
 // tools: ai-tools.kcis.kainnne.com, cards in the middle, landmarks framing them, each in a different medium.
@@ -438,14 +626,17 @@ function buildEntry(k) {
     [L.target, 2.4, .35, 'stamp'], [L.arrows, 2.7, .8],
   ];
   function place(portrait, h) {
-    if (!portrait) return {P: {castle: [.19, .15, .36], lake: [.25, -.22, .34], cherry: [.4, .3, .28], hall: [.065, -.27, .19], target: [.42, -.02, .062], lib: [.43, -.36, .1], garden: [.32, -.05, .1]}, hide: []};
+    if (!portrait) return {P: {castle: [.17, .15, .4], lake: [.24, -.23, .37], cherry: [.4, .3, .29], hall: [.04, -.27, .21], target: [.43, -.03, .065], lib: [.43, -.37, .1], garden: [.33, -.06, .11]}, hide: []};
     // fit the sketchbook into the gap between the words and the cards
     const ib = document.querySelector('.intro').getBoundingClientRect().bottom, ct = document.querySelector('.cards').getBoundingClientRect().top;
     const yTop = .5 - ib / h, yBot = .5 - ct / h, band = Math.max(.18, yTop - yBot), a = k.aspect();
-    const castleW = Math.min(.86, band * .62 * 1024 / 800 / a), lakeW = Math.min(.95, castleW * 1.15);
-    return {P: {castle: [.02, yTop - band * .34, castleW], lake: [0, yBot + band * .2, lakeW], cherry: [.36, .34, .5],
-      hall: [-.3, yBot + band * .12, .36], target: [.37, yBot + band * .55, .13], lib: [.34, yBot + band * .1, .2], garden: [-.3, yTop - band * .6, .22]},
-      hide: band < .34 ? ['hall', 'target', 'lib', 'garden'] : []};
+    // size the castle by the building itself (about 36% of the drawing's height); the ridge may run off both sides
+    const sheetH = Math.min(band * 1.45, .95), castleW = Math.min(2.3, sheetH * (1024 / 800) / a);
+    const castleY = yTop - band * .4 - .175 * sheetH, roomy = band > .62;
+    return {P: {castle: [0, castleY, castleW], lake: [0, yBot + band * .08, 1.04], cherry: [.43, yTop - band * .04, roomy ? .5 : .42],
+      target: [-.37, yTop - band * .72, roomy ? .13 : .15], garden: [.3, yTop - band * .84, roomy ? .22 : .26],
+      hall: [-.3, yBot + band * .06, .36], lib: [.33, yBot + band * .06, .22]},
+      hide: roomy ? [] : ['hall', 'lib']};
   }
   return {L, timeline, place, lake: L.lake};
 }
@@ -480,28 +671,33 @@ function buildTools(k) {
 
 export function mount(canvas, {variant = 'entry'} = {}) {
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'}); } catch { return null; }
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, small ? 1.5 : 2));
-  const scene = new THREE.Scene(), D = 10;
-  const camera = new THREE.PerspectiveCamera(30, 1, .1, 50); camera.position.set(0, 0, D);
+  try { renderer = createRenderer(canvas, Math.min(devicePixelRatio || 1, small ? 1.5 : 2)); } catch { return null; }
+  if (!renderer) return null;
+  const scene = [], layers = [], D = 10, camera = perspective(D);
+  const listeners = new AbortController(), {signal} = listeners;
   const H0 = 2 * D * Math.tan(15 * Math.PI / 180);
-  const tex = c => { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; };
-  const plane = new THREE.PlaneGeometry(1, 1);
-  const layers = [];
+  const material = (fragment, values = {}, vertex = VERT, multiply = true) => ({
+    fragment, vertex, multiply, uniforms: Object.fromEntries(Object.entries(values).map(([name, value]) => [name, {value}]))
+  });
+  const meshFor = material => {
+    const mesh = Object.assign(transform(), {material, visible: true});
+    scene.push(mesh);
+    return mesh;
+  };
   let order = 0;
-  const add = (mat, name, z, aspect) => { const mesh = new THREE.Mesh(plane, mat); mesh.renderOrder = order++; mesh.userData = {name, z, aspect}; scene.add(mesh); layers.push(mesh); return mesh; };
-  const pencil = (s, col, {grain = 1, opacity = 1} = {}) => new THREE.ShaderMaterial({vertexShader: VERT, fragmentShader: PENCIL, ...MULTIPLY,
-    uniforms: {uInk: {value: tex(s.ink)}, uOrd: {value: tex(s.ord)}, uCol: {value: new THREE.Color(col)}, uProg: {value: 0}, uOpacity: {value: opacity}, uGrain: {value: grain}}});
-  const water = (m, a, b, seed, opacity = 1) => new THREE.ShaderMaterial({vertexShader: VERT, fragmentShader: WATER, ...MULTIPLY,
-    uniforms: {uMask: {value: tex(m.c)}, uA: {value: new THREE.Color(a)}, uB: {value: new THREE.Color(b)}, uSeed: {value: new THREE.Vector2(...seed)}, uProg: {value: 0}, uOpacity: {value: opacity}, uTime: {value: 0}, uTexel: {value: 1 / m.w}, uRip: {value: new THREE.Vector3()}}});
-  const riso = (m, a, b, freq, dot = .44) => new THREE.ShaderMaterial({vertexShader: VERT, fragmentShader: RISO, ...MULTIPLY,
-    uniforms: {uMask: {value: tex(m.c)}, uA: {value: new THREE.Color(a)}, uB: {value: new THREE.Color(b)}, uOpacity: {value: 0}, uFreq: {value: freq}, uDot: {value: dot}}});
+  const add = (mat, name, z, aspect) => { const mesh = meshFor(mat); mesh.renderOrder = order++; mesh.userData = {name, z, aspect}; layers.push(mesh); return mesh; };
+  const pencil = (s, col, {grain = 1, opacity = 1} = {}) => material(PENCIL,
+    {uInk: s.ink, uOrd: s.ord, uCol: color(col), uProg: 0, uOpacity: opacity, uGrain: grain});
+  const water = (m, a, b, seed, opacity = 1) => material(WATER,
+    {uMask: m.c, uA: color(a), uB: color(b), uSeed: vector(...seed), uProg: 0, uOpacity: opacity, uTime: 0, uTexel: 1 / m.w, uRip: vector(0, 0, 0)});
+  const riso = (m, a, b, freq, dot = .44) => material(RISO,
+    {uMask: m.c, uA: color(a), uB: color(b), uOpacity: 0, uFreq: freq, uDot: dot});
 
   // paper and contours fill the view behind everything
-  const paper = new THREE.Mesh(plane, new THREE.ShaderMaterial({vertexShader: VERT, fragmentShader: PAPER, uniforms: {uAspect: {value: new THREE.Vector2(1, 1)}}, depthTest: false, depthWrite: false}));
-  paper.renderOrder = -2; paper.position.z = -4; scene.add(paper);
-  const contour = new THREE.Mesh(plane, new THREE.ShaderMaterial({vertexShader: VERT, fragmentShader: CONTOUR, ...MULTIPLY, uniforms: {uProg: {value: 0}, uAspect: {value: new THREE.Vector2(1, 1)}, uPeak: {value: new THREE.Vector2(.3, .15)}}}));
-  contour.renderOrder = -1; contour.position.z = -3; scene.add(contour);
+  const paper = meshFor(material(PAPER, {uAspect: vector(1, 1)}, VERT, false));
+  paper.renderOrder = -2; paper.position.z = -4;
+  const contour = meshFor(material(CONTOUR, {uProg: 0, uAspect: vector(1, 1), uPeak: vector(.3, .15)}));
+  contour.renderOrder = -1; contour.position.z = -3;
 
   const kit = {add, pencil, water, riso, aspect: () => camera.aspect};
   const V = (variant === 'tools' ? buildTools : buildEntry)(kit);
@@ -510,26 +706,29 @@ export function mount(canvas, {variant = 'entry'} = {}) {
   L.blossom.renderOrder = L.branch.renderOrder + .5;
 
   // petals and birds
-  const PN = small ? 46 : 110, petals = new THREE.InstancedMesh(plane.clone(), new THREE.ShaderMaterial({vertexShader: PETAL_V, fragmentShader: PETAL, ...MULTIPLY}), PN);
-  petals.geometry.setAttribute('aTint', new THREE.InstancedBufferAttribute(new Float32Array(PN).map(() => Math.random()), 1));
-  petals.renderOrder = 50; petals.frustumCulled = false; scene.add(petals);
-  const BN = small ? 5 : 9, birds = new THREE.InstancedMesh(plane.clone(), new THREE.ShaderMaterial({vertexShader: BIRD_V, fragmentShader: BIRD, ...MULTIPLY, uniforms: {uTime: {value: 0}}}), BN);
-  birds.geometry.setAttribute('aPhase', new THREE.InstancedBufferAttribute(new Float32Array(BN).map(() => Math.random() * 6.28), 1));
-  birds.renderOrder = 49; birds.frustumCulled = false; scene.add(birds);
+  function instanced(mat, count, range, renderOrder) {
+    const instances = new Float32Array(count * 17);
+    for (let i = 0; i < count; i++) instances[i * 17 + 16] = Math.random() * range;
+    return Object.assign(meshFor(mat), {renderOrder, instances, count,
+      setMatrixAt(i, matrix) { instances.set(matrix, i * 17); }});
+  }
+  const PN = small ? 46 : 110, petals = instanced(material(PETAL, {}, PETAL_V), PN, 1, 50);
+  const BN = small ? 5 : 9, birds = instanced(material(BIRD, {uTime: 0}, BIRD_V), BN, 6.28, 49);
 
   // click on the paper: a watercolor drop
-  const splash = drawSplash(), splashTex = tex(splash.c), drops = [];
+  const splash = drawSplash(), drops = [];
   const dropColors = [['#f3a3c6', '#d98fd0'], ['#b9a6ee', '#9fb0ee'], ['#e88bb5', '#c9a3e3']];
   for (let i = 0; i < 6; i++) {
-    const mat = water(splash, ...dropColors[i % 3], [.5, .5]); mat.uniforms.uMask.value = splashTex;
-    const mesh = new THREE.Mesh(plane, mat); mesh.visible = false; mesh.renderOrder = 40 + i * .01; scene.add(mesh); drops.push({mesh, born: -99});
+    const mesh = meshFor(water(splash, ...dropColors[i % 3], [.5, .5]));
+    mesh.visible = false; mesh.renderOrder = 40 + i * .01; drops.push({mesh, born: -99});
   }
+  scene.sort((a, b) => a.renderOrder - b.renderOrder);
 
   // layout in screen units; z-depth is compensated so placement reads as screen position
   let W = H0, H = H0, scrollF = 0, base = 0;
   const spots = {};
   function layout() {
-    const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
     H = H0; W = H0 * camera.aspect;
     const {P, hide, scroll = 0} = V.place(w / h < 1, h); scrollF = scroll;
     Object.assign(spots, P);
@@ -541,7 +740,7 @@ export function mount(canvas, {variant = 'entry'} = {}) {
     const kc = (D + 3) / D; contour.scale.set(W * kc * 1.12, H * kc * 1.12, 1); contour.material.uniforms.uAspect.value.set(camera.aspect, 1);
     contour.material.uniforms.uPeak.value.set(P.castle[0] * camera.aspect * .9, P.castle[1] + .05);
   }
-  layout(); addEventListener('resize', layout); document.fonts?.ready.then(layout);
+  layout();
 
   // pointer: parallax, lake ripples, wind for petals, birds keep away
   const ptr = {x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0, wx: 0, wy: 0};
@@ -551,13 +750,13 @@ export function mount(canvas, {variant = 'entry'} = {}) {
     const nx = e.clientX / innerWidth * 2 - 1, ny = 1 - e.clientY / innerHeight * 2;
     ptr.vx = nx - ptr.tx; ptr.vy = ny - ptr.ty; ptr.tx = nx; ptr.ty = ny; lastMove = performance.now();
     [ptr.wx, ptr.wy] = toWorld(e.clientX, e.clientY, 0);
-  }, {passive: true});
+  }, {passive: true, signal});
   addEventListener('pointerdown', e => {
     if (e.target.closest('a, button, input, textarea, select, label, [role="button"], .card, .lang, [class*="card"]')) return;
     const d = drops.reduce((a, b) => a.born < b.born ? a : b), [x, y] = toWorld(e.clientX, e.clientY, .4);
     d.born = performance.now() / 1000; d.mesh.visible = true; const s = (small ? .55 : .8) * (.8 + Math.random() * .5);
     d.mesh.position.set(x, y, .4); d.mesh.scale.set(s, s, 1); d.mesh.rotation.z = Math.random() * 6.28;
-  }, {passive: true});
+  }, {passive: true, signal});
 
   const petal = Array.from({length: PN}, () => ({}));
   function spawnPetal(p, initial) {
@@ -570,13 +769,14 @@ export function mount(canvas, {variant = 'entry'} = {}) {
   }
   petal.forEach(p => spawnPetal(p, true));
   const bird = Array.from({length: BN}, (_, i) => ({x: -W / 2 - Math.random() * W, dy: H * (.28 + Math.random() * .16), z: .6 + Math.random() * .6, v: .25 + Math.random() * .2, s: .12 + Math.random() * .08, ph: Math.random() * 6.28, enter: 3 + i * .35}));
-  const dummy = new THREE.Object3D();
+  const dummy = transform();
 
   const t0 = performance.now() / 1000;
-  let prev = t0, running = !document.hidden;
+  let prev = t0, pending = null, lost = false;
   const ease = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
   function frame() {
-    if (!running) return;
+    pending = null;
+    if (lost || document.hidden) return;
     const now = performance.now() / 1000, dt = Math.min(.05, now - prev), t = reduce ? 99 : now - t0; prev = now;
     for (const [mesh, s, d, mode] of V.timeline) {
       const p = ease((t - s) / d), u = mesh.material.uniforms;
@@ -609,7 +809,7 @@ export function mount(canvas, {variant = 'entry'} = {}) {
         }
         const kz = (D - p.z) / D; dummy.position.set(p.x * kz, base + (p.y - base) * kz, p.z); dummy.rotation.set(p.rx, p.ry, p.rz); dummy.scale.setScalar(p.s * Math.min(1, (t - 2.4) * .8)); dummy.updateMatrix(); petals.setMatrixAt(i, dummy.matrix);
       });
-      petals.instanceMatrix.needsUpdate = true; petals.visible = true;
+      petals.visible = true;
     } else petals.visible = false;
     // birds
     birds.material.uniforms.uTime.value = now;
@@ -621,17 +821,39 @@ export function mount(canvas, {variant = 'entry'} = {}) {
       }
       b.y = base + b.dy; const kz = (D - b.z) / D; dummy.position.set(b.x * kz, base + (b.y - base) * kz, b.z); dummy.rotation.set(0, 0, Math.sin(now + b.ph) * .08); dummy.scale.set(b.s, b.s * .6, 1); dummy.updateMatrix(); birds.setMatrixAt(i, dummy.matrix);
     });
-    birds.instanceMatrix.needsUpdate = true; birds.visible = t > 3;
+    birds.visible = t > 3;
     // drops: bloom, then fade
     for (const d of drops) if (d.mesh.visible) {
       const age = now - d.born, u = d.mesh.material.uniforms; u.uProg.value = ease(age / 1.6); u.uOpacity.value = age < 6 ? .75 : Math.max(0, .75 * (1 - (age - 6) / 4));
       if (u.uOpacity.value <= 0) d.mesh.visible = false;
     }
     renderer.render(scene, camera);
-    if (!reduce) requestAnimationFrame(frame);
+    canvas.classList.add('ready');
+    if (!reduce) schedule();
   }
-  document.addEventListener('visibilitychange', () => { running = !document.hidden; prev = performance.now() / 1000; if (running && !reduce) requestAnimationFrame(frame); });
-  requestAnimationFrame(() => { frame(); canvas.classList.add('ready'); });
-  if (reduce) addEventListener('resize', () => requestAnimationFrame(frame));
-  return {relayout: layout};
+  function schedule() {
+    if (!lost && !document.hidden && pending === null) pending = requestAnimationFrame(frame);
+  }
+  function stop() {
+    if (pending !== null) cancelAnimationFrame(pending);
+    pending = null;
+  }
+  function relayout() {
+    if (lost) return;
+    layout();
+    schedule();
+  }
+  canvas.addEventListener('webglcontextlost', () => {
+    lost = true;
+    stop();
+    listeners.abort();
+  }, {once: true});
+  document.addEventListener('visibilitychange', () => {
+    prev = performance.now() / 1000;
+    if (document.hidden) stop(); else schedule();
+  }, {signal});
+  addEventListener('resize', relayout, {signal});
+  document.fonts?.ready.then(relayout);
+  schedule();
+  return {relayout};
 }

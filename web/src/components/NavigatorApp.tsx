@@ -382,12 +382,12 @@ export function NavigatorApp() {
             title={t.steps.details}
             subtitle={need.task === "other" ? t.nav.otherHint : t.meta.privacy}
           >
-            <label className="block text-sm font-medium text-kc-ink" htmlFor="note">
+            <label className="block text-sm font-bold text-kc-ink" htmlFor="note">
               {need.task === "other" ? t.nav.otherHint : t.nav.optionalNote}
             </label>
             <textarea
               id="note"
-              className="mt-2 min-h-32 w-full rounded-2xl border border-kc-blue/15 bg-white/90 p-3 text-sm outline-none ring-kc-purple/30 focus:ring-2"
+              className="kc-field mt-2 min-h-32"
               value={need.note}
               onChange={(e) => setNeed((p) => ({ ...p, note: e.target.value }))}
               placeholder={
@@ -428,7 +428,7 @@ export function NavigatorApp() {
           </StepPanel>
         ) : null}
 
-        {mode === "navigator" && step === "results" ? (!toolsReady ? <p role="status" className="mx-auto max-w-5xl px-6 py-10 text-center">{toolsFailed?(locale==='en'?'Could not load tools. Please refresh.':'無法載入工具，請重新整理。'):(locale==='en'?'Loading tools…':'正在載入工具…')}</p> :
+        {mode === "navigator" && step === "results" ? (!toolsReady ? <p role="status" className="mx-auto max-w-5xl px-6 py-10 text-center text-kc-muted">{toolsFailed?(locale==='en'?'Could not load tools. Please refresh.':'無法載入工具，請重新整理。'):(locale==='en'?'Loading tools…':'正在載入工具…')}</p> :
           <ResultsPanel
             key="results"
             need={needWithLocale}
@@ -438,11 +438,6 @@ export function NavigatorApp() {
           />
         ) : null}
       </AnimatePresence>
-
-      <footer className="kc-site-footer mx-auto w-full max-w-5xl px-4 py-10 text-center text-xs sm:px-6">
-        <span>{t.footer} </span>
-        <a href="https://kainnne.com" target="_blank" rel="noreferrer">Kainnne</a>
-      </footer>
     </div>
   );
 }
@@ -485,10 +480,9 @@ function KeywordsStep({
         ))}
       </div>
 
-      <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-kc-blue/10 bg-white/70 p-4">
+      <label className="kc-check mt-6">
         <input
           type="checkbox"
-          className="mt-1 h-4 w-4 accent-kc-purple"
           checked={freeOnly}
           onChange={(e) => onFreeOnly(e.target.checked)}
         />

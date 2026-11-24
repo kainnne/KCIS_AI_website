@@ -25,6 +25,7 @@ const S = {
     pinSet: '設定個人四碼', pinSetNote: '登入錯題紀錄時使用。', pinAgain: '再次輸入四碼確認', pinEnter: '輸入個人四碼', pinMismatch: '兩次輸入的四碼不一致',
     badStudent: '學號格式是 j 加數字，例如 j12345', badCode: '編號或暱稱需為 2–20 個字（中英文、數字、- 或 _），且不可使用學號格式', wrongPin: n => `四碼不正確，剩餘 ${n} 次嘗試`, locked: m => `嘗試次數過多，請於 ${m} 分鐘後再試`, network: '連線失敗，請稍後再試',
     mistakes: n => `錯題複習（${n} 題）`, signedIn: id => `${id}`, signOut: '登出', back: '返回',
+    track: '題目類型', trackAll: '全部', trackConcept: '概念', trackHands: '實作', labs: '實作引導', labsNote: '依官方練習的步驟出題，沒有 Azure 環境也能先看懂流程。', steps: n => `${n} 步`, stepOf: (n, m) => `步驟 ${n}／${m}`, practiceSteps: '在 Foundry 實際操作', openLab: '開啟官方練習',
   },
   en: {
     enter: 'Enter', pinLabel: '4-digit code', pinRequired: 'Enter the 4-digit code', pinWrong: 'Incorrect code', loadFailed: "Couldn't load the question bank. Refresh to try again.",
@@ -40,6 +41,7 @@ const S = {
     pinSet: 'Set a personal PIN', pinSetNote: 'Used to sign in to your mistake record.', pinAgain: 'Confirm PIN', pinEnter: 'Enter personal PIN', pinMismatch: 'The two PINs do not match',
     badStudent: 'Student IDs start with j followed by digits, e.g. j12345', badCode: 'Use 2–20 characters: letters, digits, - or _ (not a student ID format)', wrongPin: n => `Incorrect PIN. ${n} attempts remaining`, locked: m => `Too many attempts. Try again in ${m} min`, network: 'Connection failed. Try again',
     mistakes: n => `Review mistakes (${n})`, signedIn: id => `${id}`, signOut: 'Sign out', back: 'Back',
+    track: 'Question type', trackAll: 'All', trackConcept: 'Concepts', trackHands: 'Hands-on', labs: 'Guided labs', labsNote: 'Questions follow the steps of the official exercises, so you can learn the flow before you have an Azure environment.', steps: n => `${n} steps`, stepOf: (n, m) => `Step ${n} of ${m}`, practiceSteps: 'Try it in Foundry', openLab: 'Open the official exercise',
   },
 };
 export const t = (key, ...args) => { const v = S[current][key] ?? S.zh[key]; return typeof v === 'function' ? v(...args) : v; };

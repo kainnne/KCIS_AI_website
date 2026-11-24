@@ -7,6 +7,7 @@ import { pickLocalized, useI18n } from "@/lib/i18n";
 import { buildPrompt } from "@/lib/prompts";
 import { difficultyLabel, formatStars } from "@/lib/scoring";
 import type { RankedTool, UserNeed } from "@/lib/types";
+import { trackSpot } from "./OptionCard";
 
 export function ResultsPanel({
   need,
@@ -58,19 +59,20 @@ export function ResultsPanel({
 
   return (
     <motion.section
-      initial={reduce ? false : { opacity: 0, y: 18 }}
+      initial={reduce ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-kc-blue-deep sm:text-3xl">
-            <span className="mr-2 text-kc-purple/80" aria-hidden>
+          <h2 className="kc-step-title text-2xl sm:text-3xl">
+            <span className="kc-step-mark mr-2 inline-block" aria-hidden>
               ✦
             </span>
             {t.nav.resultsTitle}
           </h2>
-          <p className="mt-1 text-sm text-kc-muted">{t.prompt.subtitle}</p>
+          <p className="kc-step-subtitle mt-2 text-sm sm:text-base">{t.prompt.subtitle}</p>
         </div>
         <div className="flex gap-2">
           <button type="button" className="kc-btn-ghost" onClick={onBack}>
@@ -82,16 +84,16 @@ export function ResultsPanel({
         </div>
       </div>
 
-      <div className="kc-card mt-5 p-4 sm:p-5">
-        <h3 className="text-sm font-semibold text-kc-purple">{t.nav.summaryTitle}</h3>
+      <div className="kc-card mt-6 p-5 sm:p-6">
+        <h3 className="kc-label">{t.nav.summaryTitle}</h3>
         <p className="mt-2 text-sm text-kc-ink sm:text-base">{summaryBits.join(" · ")}</p>
         {need.note ? <p className="mt-2 text-sm text-kc-muted">{need.note}</p> : null}
-        <p className="mt-3 text-xs text-kc-muted">{t.meta.privacy}</p>
+        <p className="mt-3 text-xs text-kc-faint">{t.meta.privacy}</p>
       </div>
 
-      <p className="mt-4 text-xs text-kc-muted">{t.nav.starsHint}</p>
+      <p className="mt-5 text-xs text-kc-muted">{t.nav.starsHint}</p>
       {ranked.some((r) => r.lowRelevance) ? (
-        <p className="mt-1 text-xs text-amber-800/90">{t.nav.lowRelevanceNote}</p>
+        <p className="mt-1 text-xs text-[#8a2350]">{t.nav.lowRelevanceNote}</p>
       ) : null}
 
       <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,40 +102,38 @@ export function ResultsPanel({
             key={item.id}
             initial={reduce ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={reduce ? undefined : { y: -7, scale: 1.012 }}
-            transition={{ delay: reduce ? 0 : index * 0.08 }}
-            className={`kc-card kc-choice relative flex flex-col overflow-hidden p-4 sm:p-5 ${
+            whileHover={reduce ? undefined : { y: -3 }}
+            transition={{ delay: reduce ? 0 : index * 0.08, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            onPointerMove={trackSpot}
+            className={`kc-card kc-choice kc-result-card relative flex flex-col overflow-hidden p-5 ${
               item.pinnedCore ? "kc-core-card" : ""
             } ${item.lowRelevance ? "kc-low-relevance-card" : ""}`}
           >
-            <span className="kc-sparkles" aria-hidden>
-              <span className="kc-sparkle kc-sparkle-a">✦</span>
-              <span className="kc-diamond">◇</span>
-            </span>
+            <span className="kc-spot" aria-hidden />
             <div className="relative z-[1] flex items-start justify-between gap-2">
               <div>
                 {item.pinnedCore ? (
-                  <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-kc-blue to-kc-purple px-2 py-0.5 text-[11px] font-semibold text-white">
+                  <span className="kc-badge kc-badge-kcis mb-2">
                     ✦ {t.nav.coreBadge}
                   </span>
                 ) : null}
                 {item.lowRelevance ? (
-                  <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-amber-400/80 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  <span className="kc-badge kc-badge-warn mb-2">
                     {t.nav.lowRelevanceBadge}
                   </span>
                 ) : null}
-                <h3 className="font-display text-xl font-semibold text-kc-blue-deep">{item.name}</h3>
+                <h3 className="text-xl">{item.name}</h3>
               </div>
             </div>
 
-            <div className="relative z-[1] mt-3 rounded-xl bg-kc-mist/90 px-3 py-2">
-              <p className="text-xs font-medium text-kc-purple">{t.nav.difficulty}</p>
-              <p className="mt-0.5 text-base tracking-wide text-kc-blue-deep" aria-label={`${item.difficultyStars} ${t.nav.stars}`}>
+            <div className="kc-subcard relative z-[1] mt-3 px-3.5 py-2.5">
+              <p className="kc-label">{t.nav.difficulty}</p>
+              <p className="kc-stars mt-0.5 text-base" aria-label={`${item.difficultyStars} ${t.nav.stars}`}>
                 {formatStars(item.difficultyStars)}
               </p>
               <p className="text-sm text-kc-ink">
                 {difficultyLabel(item.difficultyStars, locale)}
-                <span className="text-kc-muted"> · {item.difficultyStars}/5</span>
+                <span className="text-kc-muted"> · <span className="kc-num">{item.difficultyStars}/5</span></span>
               </p>
             </div>
 
@@ -141,12 +141,12 @@ export function ResultsPanel({
               {pickLocalized(item.tool.shortDescription, locale)}
             </p>
             {item.lowRelevance ? (
-              <p className="relative z-[1] mt-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs leading-relaxed text-amber-900">
+              <p className="kc-warn-note relative z-[1] mt-2 px-3 py-2 text-xs leading-relaxed">
                 {t.nav.lowRelevanceHint}
               </p>
             ) : null}
             <div className="relative z-[1] mt-3">
-              <p className="text-xs font-semibold text-kc-purple">{t.nav.why}</p>
+              <p className="kc-label">{t.nav.why}</p>
               <ul className="mt-1 space-y-1 text-sm text-kc-ink">
                 {item.reasons
                   .filter((r) => !r.startsWith("excluded") && r !== "generalist_downrank")
@@ -186,14 +186,11 @@ export function ResultsPanel({
         </p>
       ) : null}
 
-      <div className="kc-card kc-prompt-studio relative mt-8 overflow-hidden p-4 sm:p-6">
-        <span className="kc-sparkles" aria-hidden>
-          <span className="kc-sparkle kc-sparkle-b">✧</span>
-        </span>
-        <h3 className="relative z-[1] font-display text-xl font-semibold text-kc-blue-deep">
+      <div className="kc-card kc-prompt-studio relative mt-10 overflow-hidden p-5 sm:p-7">
+        <h3 className="relative z-[1] text-xl sm:text-2xl">
           {t.prompt.title}
         </h3>
-        <p className="relative z-[1] mt-1 text-sm text-kc-muted">{t.nav.promptHints}</p>
+        <p className="relative z-[1] mt-1.5 text-sm text-kc-muted">{t.nav.promptHints}</p>
 
         <div className="relative z-[1] mt-4 flex flex-wrap gap-2">
           {chips.map((chip) => {
@@ -215,7 +212,7 @@ export function ResultsPanel({
         </div>
 
         <textarea
-          className="relative z-[1] mt-4 min-h-40 w-full rounded-2xl border border-kc-blue/15 bg-white/90 p-3 text-sm leading-relaxed text-kc-ink outline-none ring-kc-purple/30 focus:ring-2"
+          className="kc-field relative z-[1] mt-4 min-h-40"
           value={promptText}
           onChange={(e) => setPromptText(e.target.value)}
           placeholder={buildPrompt(need)}
@@ -262,8 +259,8 @@ function LaunchLink({
       target="_blank"
       rel="noreferrer"
       className={`kc-launch-link ${featured ? "kc-launch-featured" : ""}`}
-      whileHover={reduce ? undefined : { y: -4, scale: 1.015 }}
-      whileTap={reduce ? undefined : { scale: 0.98 }}
+      whileHover={reduce ? undefined : { y: -2 }}
+      whileTap={reduce ? undefined : { y: 1 }}
     >
       <span className="kc-launch-monogram" aria-hidden>{name.slice(0, 1)}</span>
       <span className="min-w-0">

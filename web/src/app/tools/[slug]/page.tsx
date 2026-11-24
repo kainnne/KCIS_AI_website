@@ -23,22 +23,22 @@ export default async function ToolPage({
   return (
     <div className="kc-shell">
       <DecorBackground />
-      <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+      <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/" className="kc-btn-ghost">
           ← 回到導航 / Back
         </Link>
         <SchoolLogin /></div>
 
-        <article className="kc-card mt-6 p-5 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-wide text-kc-purple">
+        <article className="kc-card kc-tool-card mt-6 p-6 sm:p-10">
+          <p className="kc-eyebrow">
             {tool.pageStatus === "placeholder" ? "內容建置中 / Coming soon" : tool.pageStatus}
           </p>
-          <h1 className="font-display mt-2 text-3xl font-semibold text-kc-blue-deep sm:text-4xl">
+          <h1 className="mt-3 text-3xl sm:text-4xl">
             {tool.name}
           </h1>
           <p className="mt-2 text-sm text-kc-muted">
-            這個 AI 工具好不好學：{"★".repeat(tool.difficultyStars)}
-            {"☆".repeat(5 - tool.difficultyStars)}（{tool.difficultyStars}/5，星星愈多愈需要學） ·{" "}
+            這個 AI 工具好不好學：<span className="kc-stars">{"★".repeat(tool.difficultyStars)}
+            {"☆".repeat(5 - tool.difficultyStars)}</span>（<span className="kc-num">{tool.difficultyStars}/5</span>，星星愈多愈需要學） ·{" "}
             {tool.freeStatus}
             {tool.status === "deprecated" ? " · deprecated" : ""}
             {tool.priorityCore ? " · 核心推薦" : ""}
@@ -49,8 +49,8 @@ export default async function ToolPage({
             <p className="text-kc-muted">{descEn}</p>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-kc-mist/80 p-4 text-sm text-kc-muted">
-            <p className="font-medium text-kc-purple">內容建置中</p>
+          <div className="kc-tool-note mt-6 text-sm">
+            <p className="font-bold text-kc-plum">內容建置中</p>
             <p className="mt-1">
               此工具的詳細教學尚在整理，你仍可先參考簡介與官方網站。A fuller guide is still being
               written.
@@ -58,10 +58,10 @@ export default async function ToolPage({
           </div>
 
           {tool.privacyNotes?.[0] ? (
-            <p className="mt-4 text-xs text-kc-muted">{tool.privacyNotes[0]["zh-TW"]}</p>
+            <p className="mt-4 text-xs text-kc-faint">{tool.privacyNotes[0]["zh-TW"]}</p>
           ) : null}
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-8 flex flex-wrap gap-2">
             {tool.officialUrl ? (
               <a
                 href={tool.officialUrl}

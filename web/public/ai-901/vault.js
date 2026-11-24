@@ -6,6 +6,6 @@ export async function unlockVault(pin, envelope) {
   const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:bytes(envelope.salt),iterations:envelope.iterations,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['decrypt']);
   const plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(envelope.iv)},key,bytes(envelope.ciphertext));
   const bank=JSON.parse(new TextDecoder().decode(plaintext));
-  if(bank.schemaVersion!==1||bank.questions.length!==584||bank.units.length!==10)throw new Error('題庫完整性檢查失敗');
+  if(bank.schemaVersion!==1||bank.questions.length<584||bank.units.length!==10)throw new Error('題庫完整性檢查失敗');
   return bank;
 }

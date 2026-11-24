@@ -49,6 +49,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-Hant">
+      <head>
+        {/* Comfortaa (headings, numerals) and DM Mono (labels). A plain stylesheet link, so the build never fetches fonts. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=DM+Mono:wght@400;500&display=swap" />
+      </head>
       <body className={`${display.variable} ${body.variable} antialiased`}>
         <I18nProvider>{children}</I18nProvider>
       </body>

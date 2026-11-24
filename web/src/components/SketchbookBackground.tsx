@@ -11,7 +11,7 @@ export function SketchbookBackground({ quiet = false }: { quiet?: boolean }) {
     if (!canvas || canvas.dataset.mounted) return;
     canvas.dataset.mounted = "1";
     const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
-    import(/* webpackIgnore: true */ `${base}/sketchbook/sketchbook.js?v=4`)
+    import(/* webpackIgnore: true */ `${base}/sketchbook/sketchbook.js?v=5`)
       .then((m: { mount: (c: HTMLCanvasElement, o: { variant: string }) => unknown }) => m.mount(canvas, { variant: "tools" }))
       .catch(() => { /* the paper colour stays */ });
   }, []);

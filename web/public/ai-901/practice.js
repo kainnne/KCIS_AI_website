@@ -1,5 +1,6 @@
-export function questionLimit(bank,unit='all') {
-  const size=unit==='all'?bank.questions.length:bank.units.find(u=>u.unit===unit)?.questionIds.length??0;
+export function questionLimit(bank,unit='all',track='all') {
+  const pool=unit==='all'?bank.questions.filter(q=>!q?.set):(bank.units.find(u=>u.unit===unit)?.questionIds??[]).map(id=>bank.questions.find(q=>q?.id===id)??{id});
+  const size=track!=='all'?pool.filter(q=>(q?.track??'concept')===track).length:unit==='all'?bank.questions.length-bank.questions.filter(q=>q?.set).length:pool.length;
   return Math.min(100,size);
 }
 export function questionCount(value,max=100) {

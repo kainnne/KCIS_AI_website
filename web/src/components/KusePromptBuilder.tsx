@@ -607,8 +607,9 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
         {step === "result" ? (
           <motion.section
             key="kuse-result"
-            initial={reduce ? false : { opacity: 0, y: 18 }}
+            initial={reduce ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6"
           >
             <div className="kc-builder-result-heading">
@@ -743,8 +744,8 @@ export function KusePromptBuilder({ onHome }: { onHome: () => void }) {
                   target="_blank"
                   rel="noreferrer"
                   className="kc-btn-kuse-final"
-                  whileHover={reduce ? undefined : { y: -3, scale: 1.02 }}
-                  whileTap={reduce ? undefined : { scale: 0.98 }}
+                  whileHover={reduce ? undefined : { y: -2 }}
+                  whileTap={reduce ? undefined : { y: 1 }}
                 >
                   <span className="kc-launch-monogram" aria-hidden>K</span>
                   <span>{t.kuseBuilder.result.openKuse}</span>

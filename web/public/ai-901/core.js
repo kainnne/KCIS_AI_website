@@ -6,16 +6,18 @@ export function shuffle(items, random = Math.random) {
   return a;
 }
 
-export function selectQuestions(bank, {unit='all', count=40, mode='practice', ids=[]}, random=Math.random) {
+export function selectQuestions(bank, {unit='all', count=40, mode='practice', ids=[], track='all'}, random=Math.random) {
   let pool;
+  if (mode==='lab') return ids.filter(id=>bank.questions.some(q=>q.id===id));
   if (mode==='mistakes') pool=bank.questions.filter(q=>ids.includes(q.id));
-  else if (unit==='all') pool=bank.questions;
+  else if (unit==='all') pool=bank.questions.filter(q=>!q.set);
   else {
     const target=bank.units.find(u=>u.unit===unit);
     if (!target) throw new Error('找不到單元');
     const byId=new Map(bank.questions.map(q=>[q.id,q]));
     pool=target.questionIds.map(id=>byId.get(id));
   }
+  if (track!=='all') pool=pool.filter(q=>(q.track??'concept')===track);
   if (!pool.length) throw new Error('目前沒有可練習的題目');
   return shuffle(pool,random).slice(0,Math.min(Math.max(1,count),pool.length)).map(q=>q.id);
 }

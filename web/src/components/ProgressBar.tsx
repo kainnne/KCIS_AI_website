@@ -7,15 +7,15 @@ export function ProgressBar({ stepIndex, total }: { stepIndex: number; total: nu
   const pct = Math.round(((stepIndex + 1) / total) * 100);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 sm:px-6">
-      <div className="mb-2 flex items-center justify-between text-xs text-kc-muted">
+    <div className="mx-auto w-full max-w-3xl px-4 pt-5 sm:px-6 sm:pt-8">
+      <div className="kc-progress-meta mb-2 flex items-center justify-between">
         <span>
           {locale === "zh-TW" ? `步驟 ${stepIndex + 1} / ${total}` : `Step ${stepIndex + 1} / ${total}`}
         </span>
-        <span>{pct}%</span>
+        <strong>{pct}%</strong>
       </div>
       <div className="kc-progress-track" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-        <div className="kc-progress-bar transition-all duration-300 ease-out" style={{ width: `${pct}%` }} />
+        <div className="kc-progress-bar" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
