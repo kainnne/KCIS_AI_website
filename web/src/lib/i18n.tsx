@@ -32,7 +32,7 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>("zh-TW");
 
-  useEffect(()=>{try{const saved=localStorage.getItem('kcis-ui-locale');if(saved==='en'||saved==='zh-TW')setLocale(saved);}catch{}},[]);
+  useEffect(()=>{try{const q=new URLSearchParams(location.search).get('lang');const fromLink=q==='en'?'en':q==='zh'||q==='zh-TW'?'zh-TW':null;const saved=localStorage.getItem('kcis-ui-locale');const next=fromLink??(saved==='en'||saved==='zh-TW'?saved:null);if(next)setLocale(next);}catch{}},[]);
   useEffect(() => {
     document.documentElement.dataset.locale=locale;
     try{localStorage.setItem('kcis-ui-locale',locale);}catch{}

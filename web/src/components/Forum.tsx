@@ -6,6 +6,7 @@ import { ForumPostText } from './ForumPostText';
 import { ForumAdmin, type AdminSession } from './ForumAdmin';
 import { SiteHeader } from './SiteHeader';
 import { useSchoolSession } from '@/lib/shared-auth';
+import { useI18n } from '@/lib/i18n';
 
 type Post = { id:string; body:string; name:string; department:string; mine:boolean; created_at:number; updated_at:number; deleted_at:number|null; version:number; reply_count?:number; resolved?:number; solution_method?:string; solution_steps?:string; solution_result?:string };
 type Kind = 'questions'|'replies';
@@ -26,7 +27,7 @@ const errors:Record<string,[string,string]> = {
 };
 
 export function Forum() {
-  const locale='en' as const;
+  const {locale}=useI18n();
   const {session,ready:sessionReady}=useSchoolSession();
   const accountToken=useRef('');accountToken.current=session?.token||'';
   const [solving,setSolving]=useState(false),[solutionMethod,setSolutionMethod]=useState(''),[solutionSteps,setSolutionSteps]=useState(''),[solutionResult,setSolutionResult]=useState('');
