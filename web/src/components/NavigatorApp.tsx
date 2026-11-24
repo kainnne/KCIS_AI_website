@@ -13,9 +13,8 @@ import { useI18n } from "@/lib/i18n";
 import { rankTools } from "@/lib/scoring";
 import dynamic from "next/dynamic";
 import type { Department, Role, Tool, UserNeed, WizardStep } from "@/lib/types";
-import { DecorBackground } from "./DecorBackground";
 import { FeatureHub } from "./FeatureHub";
-import { InteractiveField } from "./InteractiveField";
+import { SketchbookBackground } from "./SketchbookBackground";
 import { InteractiveHero } from "./InteractiveHero";
 
 import { OptionCard, StepPanel } from "./OptionCard";
@@ -129,8 +128,7 @@ export function NavigatorApp() {
 
   return (
     <div className="kc-shell">
-      <DecorBackground />
-      <InteractiveField />
+      <SketchbookBackground quiet={mode !== "hub"} />
       <SiteHeader onHome={mode === "hub" ? undefined : openHome} />
 
       {mode === "navigator" && step !== "welcome" && step !== "results" ? (

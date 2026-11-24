@@ -60,7 +60,7 @@ function FeatureCard({
   variant: FeatureHubItem["variant"];
 }) {
   const content = <>
-      <span className="kc-feature-glow" aria-hidden />
+      <span className="kc-feature-spot" aria-hidden />
       <span className="kc-feature-topline">
         <span>{index}</span>
       </span>
@@ -75,9 +75,14 @@ function FeatureCard({
       </span>
   </>;
   const feedback = {
-    whileHover: reduce ? undefined : { y: -10, scale: 1.012 },
+    whileHover: reduce ? undefined : { y: -4 },
     whileTap: reduce ? undefined : { scale: 0.985 },
     className: `kc-feature-card kc-feature-${variant}`,
+    onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+    },
   };
   return href
     ? <motion.a href={href} {...feedback}>{content}</motion.a>
