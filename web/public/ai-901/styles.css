@@ -170,3 +170,17 @@ main>.question{animation-delay:.05s}
 .full-zh{margin-top:18px;border:1px solid rgba(122,82,220,.16);border-radius:16px;background:rgba(255,255,255,.4)}
 .full-zh>summary{padding:14px 18px}
 .full-zh>.reason{padding:0 18px 16px;font-size:15px}
+/* Phone landscape and short screens: keep the code field and buttons on the first screen. */
+@media (max-height: 520px) and (orientation: landscape) {
+.header{padding:10px 24px 6px}.header img{width:88px}.training-nav a{min-height:38px;padding:0 12px;font-size:13px}
+main{padding-top:4px;padding-bottom:24px}
+.setup,.gate,.finish{margin-top:0;padding:16px 20px 16px;gap:12px}
+.setup h1,.gate h1{font-size:30px;gap:6px}
+.gate h1::after,.school-logo{display:none}
+.lang-switch{margin-bottom:-4px}.lang-switch button{min-height:30px}
+.gate input{min-height:50px;font-size:26px}
+.gate .primary,.setup>.primary{min-height:46px}
+.ask{font-size:15px}.choice{min-height:44px}
+.question{padding:18px 22px}.stem{font-size:17px;margin-bottom:16px}
+.quiz-bar{margin-bottom:8px}.quiz-progress{margin-bottom:12px}
+}
