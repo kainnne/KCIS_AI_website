@@ -167,3 +167,6 @@ main>.question{animation-delay:.05s}
 @keyframes item-in{from{opacity:0;transform:translateY(6px)}}
 @keyframes pop-in{from{opacity:0;transform:scale(.94)}}
 }
+.full-zh{margin-top:18px;border:1px solid rgba(122,82,220,.16);border-radius:16px;background:rgba(255,255,255,.4)}
+.full-zh>summary{padding:14px 18px}
+.full-zh>.reason{padding:0 18px 16px;font-size:15px}

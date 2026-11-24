@@ -138,7 +138,10 @@ function definitionSection(entries){
  return `<details class="definition-section"><summary><strong>${t('glossary')}</strong></summary><div class="definition-list">${entries.map(entry=>`<section class="definition-entry"><h3>${entry.optionKeys.filter(key=>/^[A-Z]$/.test(key)).map(key=>`<span class="definition-key">${escape(key)}</span> `).join('')}${escape(entry.name)}</h3><p>${escape(entry.definition)}</p></section>`).join('')}</div></details>`;
 }
 function explanation(q){
- return `<section class="explanation" id="explanation" lang="zh-Hant" hidden><h2>${t('explanation')}</h2><div class="reason">${q.lesson.paragraphs.map(paragraph=>`<p>${escape(paragraph)}</p>`).join('')}</div>${q.lesson.glossary.length?`<div class="definition-panels">${definitionSection(q.lesson.glossary)}</div>`:''}</section>`;
+ const zh=`<div class="reason" lang="zh-Hant">${q.lesson.paragraphs.map(paragraph=>`<p>${escape(paragraph)}</p>`).join('')}</div>`;
+ const glossary=q.lesson.glossary.length?`<div class="definition-panels" lang="zh-Hant">${definitionSection(q.lesson.glossary)}</div>`:'';
+ if(lang()==='en'&&q.en?.explanation)return `<section class="explanation" id="explanation" hidden><h2>${t('explanation')}</h2><div class="reason"><p>${escape(q.en.explanation)}</p></div><details class="definition-section full-zh"><summary><strong>${t('fullZh')}</strong></summary>${zh}</details>${glossary}</section>`;
+ return `<section class="explanation" id="explanation" lang="zh-Hant" hidden><h2>${t('explanation')}</h2>${zh}${glossary}</section>`;
 }
 function renderVerdicts(){
  const q=current(),record=session.attempts[q.id],visible=!!record,text=qText(q);
