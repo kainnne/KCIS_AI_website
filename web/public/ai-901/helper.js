@@ -20,18 +20,21 @@ function render(md) {
 
 const ICON_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M9 9.5h6M9 12.5h3.5"/></svg>';
 const ICON_SEND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
+const ICON_WIDE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg>';
+const ICON_NARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10h-6V4M4 14h6v6M14 10l6.5-6.5M10 14l-6.5 6.5"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
 export function mountHelper({apiBase, token, context, lang, t}) {
   if (!apiBase) return {show() {}, hide() {}, question() {}};
   const threads = new Map();
   let current = null, busy = false, open = false;
+  let wide = false; try { wide = localStorage.getItem('ai901-helper-size') === 'wide'; } catch {}
   const root = document.createElement('div');
   root.className = 'helper';
   root.hidden = true;
   root.innerHTML = `<button type="button" class="helper-fab" aria-expanded="false" aria-controls="helper-panel">${ICON_CHAT}<span></span></button>
 <section id="helper-panel" class="helper-panel" role="dialog" aria-modal="false" aria-labelledby="helper-title" hidden>
-  <header class="helper-head"><div><p class="helper-eyebrow">AI-901</p><h2 id="helper-title"></h2></div><button type="button" class="helper-close">${ICON_CLOSE}</button></header>
+  <header class="helper-head"><div><p class="helper-eyebrow">AI-901</p><h2 id="helper-title"></h2></div><div class="helper-actions"><button type="button" class="helper-size"></button><button type="button" class="helper-close">${ICON_CLOSE}</button></div></header>
   <div class="helper-log" aria-live="polite"></div>
   <div class="helper-chips"></div>
   <form class="helper-form"><label class="sr-only" for="helper-input"></label><textarea id="helper-input" rows="1" maxlength="1500"></textarea><button type="submit" class="helper-send">${ICON_SEND}</button></form>
@@ -46,16 +49,23 @@ export function mountHelper({apiBase, token, context, lang, t}) {
     fab.setAttribute('aria-label', t('helperOpen'));
     root.querySelector('#helper-title').textContent = t('helperTitle');
     root.querySelector('.helper-close').setAttribute('aria-label', t('helperClose'));
+    sizeLabel();
     root.querySelector('label').textContent = t('helperAsk');
     input.placeholder = t('helperAsk');
     send.setAttribute('aria-label', t('helperSend'));
     root.querySelector('.helper-note').textContent = t('helperNote');
     chips.innerHTML = t('helperChips').map(c => `<button type="button" class="helper-chip">${esc(c)}</button>`).join('');
   }
+  function sizeLabel() {
+    const b = root.querySelector('.helper-size');
+    b.innerHTML = wide ? ICON_NARROW : ICON_WIDE; b.setAttribute('aria-label', t(wide ? 'helperShrink' : 'helperExpand')); b.title = t(wide ? 'helperShrink' : 'helperExpand');
+    b.setAttribute('aria-pressed', String(wide));
+    document.documentElement.classList.toggle('helper-wide', wide && open);
+  }
   function draw() {
     const thread = threads.get(current) ?? [];
-    log.innerHTML = thread.length ? thread.map(m => `<div class="helper-msg ${m.role}${m.error ? ' error' : ''}">${m.role === 'assistant' ? render(m.content || '…') : `<p>${esc(m.content)}</p>`}${m.trace ? `<span class="helper-trace">${esc(t('helperTrace'))} ${esc(m.trace)}</span>` : ''}</div>`).join('') + (busy && thread.at(-1)?.role === 'user' ? `<div class="helper-msg assistant typing"><span></span><span></span><span></span></div>` : '')
-      : `<p class="helper-empty">${esc(t('helperEmpty'))}</p>`;
+    const greeting = `<div class="helper-msg assistant greeting">${render(t('helperGreeting'))}</div>`;
+    log.innerHTML = greeting + thread.map(m => `<div class="helper-msg ${m.role}${m.error ? ' error' : ''}">${m.role === 'assistant' ? render(m.content || '…') : `<p>${esc(m.content)}</p>`}${m.trace ? `<span class="helper-trace">${esc(t('helperTrace'))} ${esc(m.trace)}</span>` : ''}</div>`).join('') + (busy && thread.at(-1)?.role === 'user' ? `<div class="helper-msg assistant typing"><span></span><span></span><span></span></div>` : '');
     chips.hidden = thread.length > 0;
     log.scrollTop = log.scrollHeight;
     send.disabled = busy;
@@ -63,6 +73,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
   function setOpen(value) {
     open = value; panel.hidden = !open; fab.setAttribute('aria-expanded', String(open)); root.classList.toggle('is-open', open);
     document.documentElement.classList.toggle('helper-open', open);
+    if (!open) document.documentElement.classList.remove('helper-wide'); else sizeLabel();
     if (open) { draw(); setTimeout(() => input.focus({preventScroll: true}), 60); }
   }
   async function ask(text) {
@@ -103,6 +114,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
     }
   }
   fab.addEventListener('click', () => setOpen(!open));
+  root.querySelector('.helper-size').addEventListener('click', () => { wide = !wide; try { localStorage.setItem('ai901-helper-size', wide ? 'wide' : 'half'); } catch {} sizeLabel(); });
   root.querySelector('.helper-close').addEventListener('click', () => { setOpen(false); fab.focus(); });
   chips.addEventListener('click', e => { const b = e.target.closest('.helper-chip'); if (b) ask(b.textContent); });
   form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });

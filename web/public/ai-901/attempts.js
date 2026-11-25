@@ -1,4 +1,4 @@
-import {isComplete,gradeQuestion} from './core.js?v=19';
+import {isComplete,gradeQuestion} from './core.js?v=21';
 
 export function recordAttempt(session,q,{reveal=false,timeMs=0}={}){
  if(session.attempts[q.id])return session.attempts[q.id];
