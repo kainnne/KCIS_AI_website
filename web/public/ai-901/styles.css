@@ -294,3 +294,8 @@ main{padding-top:4px;padding-bottom:24px}
 }
 @media (max-height:520px) and (orientation:landscape){html.helper-wide .helper-panel{top:0;bottom:0;right:0;width:100vw;height:100dvh;border-radius:0}}
 @media (prefers-reduced-motion:reduce){body,.helper-panel{transition:none}}
+
+/* Entrance animation only for messages that just appeared, never on re-render or while an answer streams in */
+.helper-msg{animation:none}
+@media (prefers-reduced-motion:no-preference){.helper-msg.enter{animation:helper-msg .3s cubic-bezier(.16,1,.3,1) both}}
+.helper-log{overflow-anchor:none}

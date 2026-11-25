@@ -1,9 +1,9 @@
-import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=22';
-import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=22';
-import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=22';
-import {unlockVault} from './vault.js?v=22';
-import {mountHelper} from './helper.js?v=22';
-import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=22';
+import {selectQuestions,requiredCount,isComplete,gradeQuestion,formatTime} from './core.js?v=23';
+import {questionLimit,questionCount,paceFeedback,optionCorrect,questionHeading} from './practice.js?v=23';
+import {recordAttempt,summarizeAttempts,readinessFeedback} from './attempts.js?v=23';
+import {unlockVault} from './vault.js?v=23';
+import {mountHelper} from './helper.js?v=23';
+import {API_BASE,lang,setLang,t,unitName,qText,readinessText,paceText,account,saveAccount,clearAccount,api,apiMessage,recordProgress,suggestedUnit} from './i18n.js?v=23';
 
 const main=document.querySelector('#main');
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

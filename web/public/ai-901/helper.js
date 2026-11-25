@@ -62,13 +62,33 @@ export function mountHelper({apiBase, token, context, lang, t}) {
     b.setAttribute('aria-pressed', String(wide));
     document.documentElement.classList.toggle('helper-wide', wide && open);
   }
+  // Messages animate in only the first time they appear; a streaming answer updates its own bubble in place,
+  // so nothing above it is rebuilt and nothing replays its entrance (that rebuild was what made the panel shake).
+  const seen = new WeakSet();
+  let shownFor = null, frame = 0;
+  const body = m => (m.role === 'assistant' ? render(m.content || '…') : `<p>${esc(m.content)}</p>`) + (m.trace ? `<span class="helper-trace">${esc(t('helperTrace'))} ${esc(m.trace)}</span>` : '');
+  const nearBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 80;
   function draw() {
     const thread = threads.get(current) ?? [];
-    const greeting = `<div class="helper-msg assistant greeting">${render(t('helperGreeting'))}</div>`;
-    log.innerHTML = greeting + thread.map(m => `<div class="helper-msg ${m.role}${m.error ? ' error' : ''}">${m.role === 'assistant' ? render(m.content || '…') : `<p>${esc(m.content)}</p>`}${m.trace ? `<span class="helper-trace">${esc(t('helperTrace'))} ${esc(m.trace)}</span>` : ''}</div>`).join('') + (busy && thread.at(-1)?.role === 'user' ? `<div class="helper-msg assistant typing"><span></span><span></span><span></span></div>` : '');
+    const fresh = shownFor !== current; shownFor = current;
+    const enter = m => { const first = !fresh && !seen.has(m); seen.add(m); return first ? ' enter' : ''; };
+    const greeting = `<div class="helper-msg assistant greeting${fresh ? ' enter' : ''}">${render(t('helperGreeting'))}</div>`;
+    log.innerHTML = greeting + thread.map((m, i) => `<div class="helper-msg ${m.role}${m.error ? ' error' : ''}${enter(m)}" data-i="${i}">${body(m)}</div>`).join('') + (busy && thread.at(-1)?.role === 'user' ? `<div class="helper-msg assistant typing"><span></span><span></span><span></span></div>` : '');
+    if (fresh) thread.forEach(m => seen.add(m));
     chips.hidden = thread.length > 0;
     log.scrollTop = log.scrollHeight;
     send.disabled = busy;
+  }
+  function update(q, m) {
+    if (current !== q || frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const thread = threads.get(current) ?? [], el = log.querySelector(`.helper-msg[data-i="${thread.indexOf(m)}"]`);
+      if (!el) return draw();
+      const stick = nearBottom();
+      el.innerHTML = body(m);
+      if (stick) log.scrollTop = log.scrollHeight;
+    });
   }
   function setOpen(value) {
     open = value; panel.hidden = !open; fab.setAttribute('aria-expanded', String(open)); root.classList.toggle('is-open', open);
@@ -91,7 +111,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
         const data = await response.json().catch(() => ({}));
         throw Object.assign(new Error(data.error || 'network'), {trace: data.trace});
       }
-      thread.push(reply); busy = false;
+      thread.push(reply); busy = false; if (current === q) draw();
       const reader = response.body.getReader(), dec = new TextDecoder(); let buffer = '', status = 'ok';
       for (;;) {
         const {value, done} = await reader.read(); if (done) break;
@@ -100,7 +120,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
           const line = buffer.slice(0, i).replace(/^data: /, ''); buffer = buffer.slice(i + 2);
           let ev; try { ev = JSON.parse(line); } catch { continue; }
           if (ev.type === 'start') reply.trace = ev.trace;
-          else if (ev.type === 'delta') { reply.content += ev.text; if (current === q) draw(); }
+          else if (ev.type === 'delta') { reply.content += ev.text; update(q, reply); }
           else if (ev.type === 'done') status = ev.status;
         }
       }
@@ -110,7 +130,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
       if (!thread.includes(reply)) thread.push(reply);
       reply.content = t(key); reply.error = true; reply.trace ??= err.trace;
     } finally {
-      busy = false; if (current === q) draw();
+      busy = false; if (frame) { cancelAnimationFrame(frame); frame = 0; } if (current === q) draw();
     }
   }
   fab.addEventListener('click', () => setOpen(!open));
