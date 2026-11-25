@@ -1624,3 +1624,14 @@ summary {
 .kc-feature-copy { margin-bottom: 1.6rem; }
 
 .kc-feature-copy strong { font-family: "Comfortaa", var(--font-display), sans-serif; font-weight: 700; }
+
+/* Hub cards carry both languages; the translation note and the alert shown if Google Translate is on */
+.kc-feature-copy .kc-feature-en { display: block; margin-top: .45rem; font: 600 .95rem/1.3 var(--font-display), Nunito, sans-serif; font-style: normal; letter-spacing: -.01em; opacity: .62; }
+.kc-feature-copy .kc-feature-desc-en { display: block; margin-top: .35rem; font-size: .84em; line-height: 1.5; opacity: .8; }
+.kc-feature-action .kc-feature-action-en { margin-left: .1rem; font-size: .9em; font-weight: 700; opacity: .62; }
+.kc-translate-note { display: flex; align-items: flex-start; gap: .55rem; max-width: 46rem; margin: 1.4rem auto 0; padding: .75rem 1rem; border: 1px solid rgba(255, 255, 255, .8); border-radius: 1.1rem; background: rgba(255, 255, 255, .62); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: #6b5274; font-size: .8rem; font-weight: 600; line-height: 1.6; text-align: left; }
+.kc-translate-note svg { flex: none; width: 1rem; height: 1rem; margin-top: .2rem; fill: none; stroke: #a2358a; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.kc-translate-note span span { display: block; opacity: .85; }
+.kc-translate-alert { position: fixed; z-index: 80; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); width: min(560px, calc(100vw - 24px)); display: flex; align-items: flex-start; gap: 10px; padding: 12px 12px 12px 16px; border: 1px solid rgba(255, 255, 255, .85); border-radius: 18px; background: rgba(255, 236, 244, .92); backdrop-filter: blur(18px); box-shadow: 0 18px 50px rgba(200, 48, 107, .16); color: #6b1d45; font-size: 13px; font-weight: 700; line-height: 1.55; }
+.kc-translate-alert p { margin: 0; flex: 1; }
+.kc-translate-alert button { flex: none; width: 30px; height: 30px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .7); color: #6b1d45; font-size: 18px; line-height: 1; cursor: pointer; }

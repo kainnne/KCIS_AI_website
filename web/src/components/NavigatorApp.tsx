@@ -14,6 +14,8 @@ import { rankTools } from "@/lib/scoring";
 import dynamic from "next/dynamic";
 import type { Department, Role, Tool, UserNeed, WizardStep } from "@/lib/types";
 import { FeatureHub } from "./FeatureHub";
+import zhHub from "@/locales/zh-TW.json";
+import enHub from "@/locales/en.json";
 import { SketchbookBackground } from "./SketchbookBackground";
 import { InteractiveHero } from "./InteractiveHero";
 
@@ -129,7 +131,7 @@ export function NavigatorApp() {
   return (
     <div className="kc-shell">
       <SketchbookBackground quiet={mode !== "hub"} />
-      <SiteHeader onHome={mode === "hub" ? undefined : openHome} />
+      <SiteHeader onHome={mode === "hub" ? undefined : openHome} showLanguage={mode !== "hub"} />
 
       {mode === "navigator" && step !== "welcome" && step !== "results" ? (
         <ProgressBar stepIndex={progressIndex} total={progressTotal} />
@@ -144,9 +146,12 @@ export function NavigatorApp() {
                 id: "navigator",
                 index: "01",
                 monogram: "N",
-                title: t.hub.navigator.title,
-                description: t.hub.navigator.description,
-                action: t.hub.navigator.action,
+                title: zhHub.hub.navigator.title,
+                titleEn: enHub.hub.navigator.title,
+                description: zhHub.hub.navigator.description,
+                descriptionEn: enHub.hub.navigator.description,
+                action: zhHub.hub.navigator.action,
+                actionEn: enHub.hub.navigator.action,
                 variant: "light",
                 onClick: openNavigator,
               },
@@ -154,9 +159,12 @@ export function NavigatorApp() {
                 id: "kuse",
                 index: "02",
                 monogram: "K",
-                title: t.hub.kuse.title,
-                description: t.hub.kuse.description,
-                action: t.hub.kuse.action,
+                title: zhHub.hub.kuse.title,
+                titleEn: enHub.hub.kuse.title,
+                description: zhHub.hub.kuse.description,
+                descriptionEn: enHub.hub.kuse.description,
+                action: zhHub.hub.kuse.action,
+                actionEn: enHub.hub.kuse.action,
                 variant: "dark",
                 onClick: () => setMode("kuse"),
               },
@@ -164,9 +172,11 @@ export function NavigatorApp() {
                 id: "forum",
                 index: "03",
                 monogram: "Q",
-                title: t.hub.forum.title,
+                title: zhHub.hub.forum.title,
+                titleEn: enHub.hub.forum.title,
                 description: "",
-                action: t.hub.forum.action,
+                action: zhHub.hub.forum.action,
+                actionEn: enHub.hub.forum.action,
                 variant: "mint",
                 onClick: () => { window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/forum/`; },
               },
@@ -174,9 +184,11 @@ export function NavigatorApp() {
                 id: "wikinb",
                 index: "04",
                 monogram: "W",
-                title: t.hub.wikinb.title,
+                title: zhHub.hub.wikinb.title,
+                titleEn: enHub.hub.wikinb.title,
                 description: "",
-                action: t.hub.wikinb.action,
+                action: zhHub.hub.wikinb.action,
+                actionEn: enHub.hub.wikinb.action,
                 variant: "purple",
                 href: wikiUrl,
               },
@@ -184,9 +196,11 @@ export function NavigatorApp() {
                 id: "videos",
                 index: "05",
                 monogram: "▶",
-                title: t.hub.videos.title,
+                title: zhHub.hub.videos.title,
+                titleEn: enHub.hub.videos.title,
                 description: "",
-                action: t.hub.videos.action,
+                action: zhHub.hub.videos.action,
+                actionEn: enHub.hub.videos.action,
                 variant: "light",
                 href: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/videos/`,
               },
@@ -194,9 +208,11 @@ export function NavigatorApp() {
                 id: "ai901",
                 index: "06",
                 monogram: "A",
-                title: t.hub.ai901.title,
+                title: zhHub.hub.ai901.title,
+                titleEn: enHub.hub.ai901.title,
                 description: "",
-                action: t.hub.ai901.action,
+                action: zhHub.hub.ai901.action,
+                actionEn: enHub.hub.ai901.action,
                 variant: "dark",
                 href: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/ai-901/`,
               },

@@ -7,7 +7,7 @@ import { SchoolLogin } from "./SchoolLogin";
 import "./SharedHeader.css";
 const asset=(path:string)=>`${process.env.NEXT_PUBLIC_BASE_PATH??""}${path}`;
 const wiki=(process.env.NEXT_PUBLIC_WIKINB_URL||"https://wikinb.kcis.kainnne.com/").replace(/\/$/,"");
-export function SiteHeader({onHome,onManage}:{onHome?:()=>void;onManage?:()=>void}){
+export function SiteHeader({onHome,onManage,showLanguage=true}:{onHome?:()=>void;onManage?:()=>void;showLanguage?:boolean}){
  const {locale,toggleLocale}=useI18n(),{session,ready}=useSchoolSession();
  const [open,setOpen]=useState(false),wrap=useRef<HTMLDivElement>(null),toggle=useRef<HTMLButtonElement>(null);
  const text=(en:string,zh:string)=>locale==='en'?en:zh;
@@ -24,7 +24,7 @@ export function SiteHeader({onHome,onManage}:{onHome?:()=>void;onManage?:()=>voi
  {onManage&&<button className="kc-shared-nav-item" onClick={()=>act(onManage)}>{text('Manage','管理')}</button>}
  <div className="kc-shared-nav-divider"/>
  <SchoolLogin renderTrigger={({openAccount,openSignOut})=><>{session?<><button className="kc-shared-nav-item kc-shared-nav-profile" aria-label={text('Account','帳號')} aria-haspopup="dialog" onClick={()=>act(openAccount)}><span>{session?.user.nickname||session?.user.name}</span><small>{session?.user.department=== '教職員'?text('Staff','教職員'):session?.user.department==='學生'?text('Student','學生'):session?.user.department}</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button className="kc-shared-nav-item" onClick={()=>act(openSignOut)}>{text('Sign out','登出')}</button></>:<button disabled={!ready} className="kc-shared-nav-item" onClick={()=>act(openAccount)}>{ready?text('Sign in','登入'):text('Checking…','確認中…')}</button>}</>}/>
- <div className="kc-shared-nav-divider"/>
- <button className="kc-shared-nav-item kc-shared-nav-language" aria-label={text('Switch to Chinese','切換為英文')} onClick={toggleLocale}><span>{text('Language','語言')}</span><span className="kc-shared-nav-language-options" aria-hidden="true"><span className={locale==='en'?'is-active':''}>EN</span><span className={locale==='zh-TW'?'is-active':''}>中文</span></span></button>
+ {showLanguage&&<><div className="kc-shared-nav-divider"/>
+ <button className="kc-shared-nav-item kc-shared-nav-language" aria-label={text('Switch to Chinese','切換為英文')} onClick={toggleLocale}><span>{text('Language','語言')}</span><span className="kc-shared-nav-language-options" aria-hidden="true"><span className={locale==='en'?'is-active':''}>EN</span><span className={locale==='zh-TW'?'is-active':''}>中文</span></span></button></>}
  </div></div></nav></div></header><div className="kc-shared-header-space" aria-hidden="true"/></>;
 }

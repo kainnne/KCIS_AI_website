@@ -7,8 +7,11 @@ export type FeatureHubItem = {
   index: string;
   monogram: string;
   title: string;
+  titleEn?: string;
   description: string;
+  descriptionEn?: string;
   action: string;
+  actionEn?: string;
   variant: "light" | "dark" | "mint" | "purple";
   onClick?: () => void;
   href?: string;
@@ -34,6 +37,10 @@ export function FeatureHub({
           <FeatureCard key={feature.id} {...feature} reduce={Boolean(reduce)} />
         ))}
       </div>
+      <p className="kc-translate-note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h8M8 3v2M10.5 5c-.6 3.6-2.8 6.4-6.5 8M6 8.5c1 1.8 2.6 3.2 4.6 4"/><path d="m12.5 21 4-9 4 9M14 18h5"/></svg>
+        <span>請不要使用 Google 網頁翻譯，可能讓功能失效或文字顯示錯誤；各功能裡都有中文 / English 切換。<span lang="en">Please don’t use Google Translate here: it can break features and garble text. Each tool has its own 中文 / English switch.</span></span>
+      </p>
     </motion.main>
   );
 }
@@ -42,8 +49,11 @@ function FeatureCard({
   index,
   monogram,
   title,
+  titleEn,
   description,
+  descriptionEn,
   action,
+  actionEn,
   onClick,
   href,
   reduce,
@@ -52,8 +62,11 @@ function FeatureCard({
   index: string;
   monogram: string;
   title: string;
+  titleEn?: string;
   description: string;
+  descriptionEn?: string;
   action: string;
+  actionEn?: string;
   onClick?: () => void;
   href?: string;
   reduce: boolean;
@@ -67,10 +80,11 @@ function FeatureCard({
       <span className="kc-feature-monogram" aria-hidden>{monogram}</span>
       <span className="kc-feature-copy">
         <strong>{title}</strong>
-        {description && <span>{description}</span>}
+        {titleEn && titleEn !== title && <em className="kc-feature-en" lang="en">{titleEn}</em>}
+        {description && <span>{description}{descriptionEn && <small className="kc-feature-desc-en" lang="en">{descriptionEn}</small>}</span>}
       </span>
       <span className="kc-feature-action">
-        {action}
+        {action}{actionEn && <small className="kc-feature-action-en" lang="en">{actionEn}</small>}
         <span aria-hidden>↗</span>
       </span>
   </>;

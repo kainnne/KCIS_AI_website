@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito, Noto_Sans_TC } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n";
+import { TranslateGuard } from "@/components/TranslateGuard";
 import "./globals.css";
 
 const kainnneBrandImage = process.env.NEXT_PUBLIC_BRAND_IMAGE || "https://kainnne.com/brand/kainnne-mark.png";
@@ -22,6 +23,7 @@ const body = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
+  other: { google: "notranslate" },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://ai-tools.kcis.kainnne.com"),
   title: "康橋 AI 工具站",
   description: "為教學、學習與行政工作找到合適的 AI 工具，或建立可直接交給 Kuse 的結構化 Prompt。",
@@ -48,7 +50,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-Hant">
+    <html lang="zh-Hant" translate="no">
       <head>
         {/* Comfortaa (headings, numerals) and DM Mono (labels). A plain stylesheet link, so the build never fetches fonts. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,6 +60,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className={`${display.variable} ${body.variable} antialiased`}>
         <I18nProvider>{children}</I18nProvider>
+        <TranslateGuard />
       </body>
     </html>
   );
