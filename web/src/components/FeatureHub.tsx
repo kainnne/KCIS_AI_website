@@ -32,15 +32,15 @@ export function FeatureHub({
       aria-label="AI Tools"
       className="kc-hub mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10"
     >
+      <p className="kc-translate-note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h8M8 3v2M10.5 5c-.6 3.6-2.8 6.4-6.5 8M6 8.5c1 1.8 2.6 3.2 4.6 4"/><path d="m12.5 21 4-9 4 9M14 18h5"/></svg>
+        <span>請不要使用 Google 或其他瀏覽器的網頁翻譯，可能會讓功能失效或文字顯示錯誤。我們已經在各功能裡加入中文 / EN 切換。<span lang="en">Please don’t use Google Translate or any other browser translation. It can break features and garble text. We’ve added a 中文 / EN switch to each tool.</span></span>
+      </p>
       <div className="kc-feature-grid">
         {features.map((feature) => (
           <FeatureCard key={feature.id} {...feature} reduce={Boolean(reduce)} />
         ))}
       </div>
-      <p className="kc-translate-note">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h8M8 3v2M10.5 5c-.6 3.6-2.8 6.4-6.5 8M6 8.5c1 1.8 2.6 3.2 4.6 4"/><path d="m12.5 21 4-9 4 9M14 18h5"/></svg>
-        <span>請不要使用 Google 網頁翻譯，可能讓功能失效或文字顯示錯誤；各功能裡都有中文 / English 切換。<span lang="en">Please don’t use Google Translate here: it can break features and garble text. Each tool has its own 中文 / English switch.</span></span>
-      </p>
     </motion.main>
   );
 }
