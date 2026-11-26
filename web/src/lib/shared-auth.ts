@@ -7,10 +7,21 @@ export function authBase(){
   if(configured){const url=new URL(configured);if(local&&['localhost','127.0.0.1'].includes(url.hostname))url.hostname=location.hostname;return url.href.replace(/\/$/,'');}
   return local?'http://'+location.hostname+':8790':'';
 }
+// The sign-in cookie comes from another site (the API's workers.dev address), and iPhone Safari and other
+// browsers block such cookies, so sign-in looked like it failed after a correct code. The API also returns a
+// signed token; keep it in this browser and send it as a Bearer header, like WikiNB does. The cookie still works where allowed.
+const TOKEN_KEY='kcis_school_token';
+function storedToken(){try{return localStorage.getItem(TOKEN_KEY)||'';}catch{return '';}}
+function storeToken(token:string){try{if(token)localStorage.setItem(TOKEN_KEY,token);else localStorage.removeItem(TOKEN_KEY);}catch{}}
 export async function schoolRequest(path:string,body?:unknown,method?:string){
   const base=authBase();if(!base)throw Error('登入服務尚未連接 / Sign-in is not connected yet.');
-  const res=await fetch(base+'/api/auth/'+path,{method:method||(body===undefined?'GET':'POST'),credentials:'include',headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(['send-code','lookup'].includes(path)?75000:15000)});
-  const data=await res.json().catch(()=>({}));if(!res.ok)throw Object.assign(Error(data.error||'連線失敗 / Connection failed.'),{status:res.status});return data;
+  const headers:Record<string,string>={'Content-Type':'application/json'},token=storedToken();if(token)headers.Authorization='Bearer '+token;
+  const res=await fetch(base+'/api/auth/'+path,{method:method||(body===undefined?'GET':'POST'),credentials:'include',headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(['send-code','lookup'].includes(path)?75000:15000)});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok){if(res.status===401&&token&&path==='shared-session')storeToken('');throw Object.assign(Error(data.error||'連線失敗 / Connection failed.'),{status:res.status});}
+  if(path==='login-with-code'&&typeof data.token==='string')storeToken(data.token);
+  if(path==='logout')storeToken('');
+  return data;
 }
 type Snapshot={session:SchoolSession|null;ready:boolean;error:string};
 const initial:Snapshot={session:null,ready:false,error:''};
@@ -28,7 +39,7 @@ export function refreshSchoolSession(force=false):Promise<SchoolSession|null>{
   }).finally(()=>{pending=null;});return pending;
 }
 export function sessionChanged(){try{localStorage.setItem('kcis:auth-change',String(Date.now()));}catch{}window.dispatchEvent(new Event('kcis:session'));}
-export function clearSchoolSession(){generation++;publish({session:null,ready:true,error:''});sessionChanged();}
+export function clearSchoolSession(){storeToken('');generation++;publish({session:null,ready:true,error:''});sessionChanged();}
 export function useSchoolSession(){
   const state=useSyncExternalStore(fn=>{listeners.add(fn);return()=>listeners.delete(fn);},()=>snapshot,()=>initial);
   useEffect(()=>{
