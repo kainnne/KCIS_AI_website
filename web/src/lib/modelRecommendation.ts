@@ -1,18 +1,11 @@
 import type { Locale } from "./types";
 import type { KusePromptInput, KuseTaskKind } from "./kusePrompt";
 
-type ModelId =
-  | "claude-opus-5"
-  | "claude-opus-4-8"
-  | "claude-sonnet-5"
-  | "gpt-5-6-sol"
-  | "gpt-5-6-terra"
-  | "gpt-5-6-luna"
-  | "gemini-3-5-flash"
-  | "gemini-3-1-pro";
+type GeneralModelId = "claude-sonnet-5-5" | "claude-haiku-5-5" | "gpt-6-1-sol" | "gemini-3-8-flash";
+type ImageModelId = "gpt-image-2-5-sunburst" | "nano-banana-2-0";
 
-type ModelProfile = {
-  id: ModelId;
+type ModelProfile<Id extends string = GeneralModelId | ImageModelId> = {
+  id: Id;
   name: string;
   strength: Record<Locale, string>;
   tradeoff: Record<Locale, string>;
@@ -33,104 +26,82 @@ export type ModelRecommendation = {
   allModels: ModelChoice[];
 };
 
-const MODELS: ModelProfile[] = [
+const MODELS: ModelProfile<GeneralModelId>[] = [
   {
-    id: "claude-opus-5",
-    name: "Claude Opus 5",
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
     strength: {
-      en: "complex agentic work, deep reasoning, long-horizon tasks, and structured documents",
-      "zh-TW": "複雜代理任務、深度推理、長流程工作與結構化文件",
+      en: "Natural Traditional Chinese, layout for slides, documents and handouts, video scripts, transcript cleanup, and multi-step work (1.0x)",
+      "zh-TW": "繁體中文語句自然，擅長簡報、文件與講義排版，也適合影片腳本、逐字稿整理、文字修訂及多步驟任務（1.0x）",
     },
     tradeoff: {
-      en: "Anthropic rates its latency as moderate; Sonnet 5 is the faster official balance for routine work",
-      "zh-TW": "Anthropic 將延遲標為中等；一般日常工作用 Sonnet 5 會更快、更均衡",
+      en: "GPT-6.1 Sol is steadier for heavy calculations and research with many facts to verify.",
+      "zh-TW": "大量計算或需要逐項查證的研究，GPT-6.1 Sol 較穩定。",
     },
   },
   {
-    id: "claude-opus-4-8",
-    name: "Claude Opus 4.8",
+    id: "claude-haiku-5-5",
+    name: "Claude Haiku 5.5",
     strength: {
-      en: "reliable agentic work, knowledge work, deep research, slide building, and analysis",
-      "zh-TW": "可靠的代理任務、知識工作、深度研究、簡報製作與分析",
+      en: "Typo fixes, short translations, simple rewrites, and quick formatting at the lowest point multiplier (0.2x)",
+      "zh-TW": "適合修正錯字、短文翻譯、簡單改寫與快速調整格式，點數倍率最低（0.2x）",
     },
     tradeoff: {
-      en: "Opus 5 is the newer successor with further gains in deep reasoning and long-horizon work",
-      "zh-TW": "Opus 5 是更新一代，官方指出深度推理與長流程工作的能力又再提升",
+      en: "Use Sonnet 5.5 for long, complex, or design-heavy work.",
+      "zh-TW": "長篇、複雜或重視版面設計的工作，較適合交給 Sonnet 5.5。",
     },
   },
   {
-    id: "claude-sonnet-5",
-    name: "Claude Sonnet 5",
+    id: "gpt-6-1-sol",
+    name: "GPT-6.1 Sol",
     strength: {
-      en: "Anthropic's official speed-intelligence balance for everyday professional, coding, and agentic work",
-      "zh-TW": "Anthropic 官方定位的速度與智慧平衡，適合日常專業、程式與代理任務",
+      en: "Steady with numbers, spreadsheets, grades, survey data, and research that needs extensive fact-checking",
+      "zh-TW": "擅長數字處理、試算表、成績與問卷資料分析，也適合需要逐項查證的研究",
     },
     tradeoff: {
-      en: "Opus 5 remains the better fit for the deepest complex or long-horizon work",
-      "zh-TW": "遇到最深、最複雜或需要長時間推進的工作，Opus 5 仍更合適",
+      en: "Kuse's default costs 1.1x points. Sonnet 5.5 tends to produce more natural writing and slide layouts.",
+      "zh-TW": "Kuse 的預設模型，點數倍率為 1.1x。文字表達與簡報版面通常以 Sonnet 5.5 較自然。",
     },
   },
   {
-    id: "gpt-5-6-sol",
-    name: "GPT-5.6 Sol",
+    id: "gemini-3-8-flash",
+    name: "Gemini 3.8 Flash",
     strength: {
-      en: "flagship reasoning, coding, complex professional work, and front-end design",
-      "zh-TW": "旗艦級推理、程式、複雜專業工作與前端設計",
+      en: "An option when you prefer Gemini or another model has fallen short",
+      "zh-TW": "想用 Gemini，或其他模型的結果不符合需求時，可以試用",
     },
     tradeoff: {
-      en: "it is the highest-cost GPT-5.6 tier; Terra is the official balance for most routine work",
-      "zh-TW": "它是 GPT-5.6 系列中成本最高的一級；多數日常工作用 Terra 會更均衡",
-    },
-  },
-  {
-    id: "gpt-5-6-terra",
-    name: "GPT-5.6 Terra",
-    strength: {
-      en: "OpenAI's official balance of intelligence and cost for general professional work",
-      "zh-TW": "OpenAI 官方定位的智慧與成本平衡，適合一般專業工作",
-    },
-    tradeoff: {
-      en: "Sol is intended for the hardest reasoning and coding, while Luna is more economical at high volume",
-      "zh-TW": "最困難的推理與程式工作適合 Sol；大量重複任務則用 Luna 更省",
-    },
-  },
-  {
-    id: "gpt-5-6-luna",
-    name: "GPT-5.6 Luna",
-    strength: {
-      en: "cost-sensitive, high-volume work and fast lightweight drafts",
-      "zh-TW": "重視成本的大量工作與快速輕量初稿",
-    },
-    tradeoff: {
-      en: "it is optimized for efficiency rather than the hardest quality-first reasoning tasks",
-      "zh-TW": "它以效率為主，不是最困難、品質優先推理任務的首選",
-    },
-  },
-  {
-    id: "gemini-3-5-flash",
-    name: "Gemini 3.5 Flash",
-    strength: {
-      en: "higher-speed, lower-cost multimodal work and multi-step agent loops at scale",
-      "zh-TW": "更高速度、較低成本的多模態工作與大規模多步驟代理流程",
-    },
-    tradeoff: {
-      en: "it prioritizes speed and scale; 3.1 Pro is the stronger fit when advanced multimodal reasoning is essential",
-      "zh-TW": "它偏重速度與規模；真的需要進階多模態推理時，3.1 Pro 更合適",
-    },
-  },
-  {
-    id: "gemini-3-1-pro",
-    name: "Gemini 3.1 Pro",
-    strength: {
-      en: "complex tasks, broad knowledge, advanced multimodal reasoning, and reliable multi-step tool use",
-      "zh-TW": "複雜任務、廣泛知識、進階多模態推理與可靠的多步驟工具使用",
-    },
-    tradeoff: {
-      en: "it is a preview text-output model, does not directly generate images, and uses more Kuse account traffic",
-      "zh-TW": "它仍是預覽版文字輸出模型，不能直接生成圖片，而且會使用較多 Kuse 帳號流量",
+      en: "This Flash model costs 2.3x points, the highest multiplier among Kuse's general models.",
+      "zh-TW": "這款 Flash 模型的點數倍率為 2.3x，在 Kuse 通用模型中最高。",
     },
   },
 ];
+
+const IMAGE_DEFAULT: ModelProfile<ImageModelId> = {
+  id: "gpt-image-2-5-sunburst",
+  name: "GPT Image 2.5 Sunburst",
+  strength: {
+    en: "Illustrations and other new images (1.0x)",
+    "zh-TW": "適合製作插畫或其他新圖片（1.0x）",
+  },
+  tradeoff: {
+    en: "Select it in Kuse's Image tab.",
+    "zh-TW": "請在 Kuse 的圖片分頁選用。",
+  },
+};
+
+const IMAGE_EDIT_ALTERNATIVE: ModelProfile<ImageModelId> = {
+  id: "nano-banana-2-0",
+  name: "Nano Banana 2.0",
+  strength: {
+    en: "An alternative for editing an existing image (1.3x)",
+    "zh-TW": "編修既有圖片時可考慮的備選（1.3x）",
+  },
+  tradeoff: {
+    en: "It uses more points than the default image model.",
+    "zh-TW": "點數倍率高於預設圖片模型。",
+  },
+};
 
 const TASK_FOCUS: Record<KuseTaskKind, Record<Locale, string>> = {
   teaching_material: { en: "instruction-ready teaching material", "zh-TW": "可直接教學的教材" },
@@ -153,129 +124,88 @@ const TASK_FOCUS: Record<KuseTaskKind, Record<Locale, string>> = {
   other: { en: "general reasoning and a usable first draft", "zh-TW": "通用推理與可用初稿" },
 };
 
-function add(scores: Record<ModelId, number>, ids: ModelId[], points: number) {
-  ids.forEach((id) => {
-    scores[id] += points;
-  });
-}
+const DATA_TASK = /試算表|分析.{0,10}(?:成績|問卷|數據|資料)|(?:成績|問卷|數據|資料).{0,10}(?:分析|統計)|問卷結果|統計.{0,10}(?:成績|問卷|數據|資料)|\b(?:spreadsheets?|data analysis|analy[sz]e (?:the )?(?:student )?(?:data|grades|survey|results)|survey (?:data|results|analysis)|grade analysis)\b/i;
+const QUICK_EDIT = /(?:錯[別别]?字|別字|漏字|短文翻譯|翻譯.{0,8}(?:短文|一小段|一句)|簡單(?:改寫|修正)|小幅修[改訂]|微調格式|快速排版|只(?:要|需).{0,8}(?:改寫|校對|調整格式))|\b(?:typos?|short translation|translate (?:this |a )?(?:short (?:text|passage|paragraph|sentence)|sentence)|simple rewrite|quick (?:fix|formatting)|minor (?:edits?|fixes))\b/i;
+const SUBSTANTIAL_EDIT = /長篇|整[份篇本部]|整理.{0,8}逐字稿|製作.{0,8}(?:影片|簡報)|\b(?:long-form|full[- ]length|(?:whole|entire) (?:document|transcript|script)|\d{2,}[- ]page)\b/i;
+const IMAGE_EDIT = /(?:編[修輯]|修[改圖]|調整|去背|換背景).{0,12}(?:原圖|現有|既有|附件|上傳|這張|圖片|照片)|(?:圖片|照片|原圖).{0,12}(?:去背|換背景|編修)|\b(?:edit|retouch|modify|crop) (?:\w+ ){0,4}(?:image|photo|picture|illustration)\b|\b(?:remove|replace) (?:the )?background\b/i;
+const GEMINI_REQUEST = /(?:想(?:試|用)|請(?:試用|使用|用)|改用|換成|指定|希望(?:用|使用)|偏好|優先使用)\s*Gemini\b|\b(?:use|try|switch to|prefer|want) Gemini\b|^Gemini(?: 3\.8(?: Flash)?)?[.!。]?$/im;
+const GEMINI_EXCLUDED = /(?:不要|請勿|避免)(?:使用|用|改用|試用)\s*Gemini\b|\b(?:do not|don['’]t|never|avoid) (?:us(?:e|ing)|try(?:ing)?) Gemini\b/i;
+const MODEL_FALLBACK = /(?:其他|前面|先前|原本的|兩個).{0,18}(?:模型|結果).{0,12}(?:不適合|不符合|不理想|不好|不行|不滿意|失敗|沒成功|無法)|\b(?:other|previous|both) (?:models?|options?) (?:did not work|didn['’]t work|failed|fell short)\b/i;
 
 export function recommendKuseModels(input: KusePromptInput, locale: Locale): ModelRecommendation {
-  const scores = Object.fromEntries(MODELS.map((model) => [model.id, 0])) as Record<ModelId, number>;
-  const signals: string[] = [];
+  const { taskKind } = input;
+  const request = [input.task, input.extraConstraints].map((value) => value.trim()).join("\n");
+  const isImage = taskKind === "image" || taskKind === "poster" || input.format === "image" || input.format === "poster";
+  const needsDataAnalysis = DATA_TASK.test(input.task) ||
+    ((taskKind === "report" || taskKind === "other") && input.sources.includes("spreadsheet"));
+  const isQuickEdit = QUICK_EDIT.test(input.task) && !SUBSTANTIAL_EDIT.test(request) &&
+    input.sources.length < 3 && input.materialDetails.length <= 280;
 
-  // Gemini 3.1 Pro uses more account traffic, so it starts lower and must earn its way back
-  // through a task that genuinely benefits from deep multimodal or long-context work.
-  add(scores, ["gemini-3-1-pro"], -4);
+  const scores: Record<GeneralModelId, number> = {
+    "claude-sonnet-5-5": 8,
+    "claude-haiku-5-5": 2,
+    "gpt-6-1-sol": 5,
+    "gemini-3-8-flash": 0,
+  };
+  const signal = (en: string, zh: string) => locale === "zh-TW" ? zh : en;
+  const focus = TASK_FOCUS[taskKind][locale];
+  const signals = [focus];
 
-  const everydayTasks: KuseTaskKind[] = [
-    "teaching_material",
-    "lesson_plan",
-    "worksheet",
-    "class_activity",
-    "notice",
-    "meeting_minutes",
-    "form",
-    "resource_guide",
-  ];
-  const complexTasks: KuseTaskKind[] = ["assessment", "event_plan", "sop", "report"];
-
-  if (input.taskKind === "website") {
-    add(scores, ["gpt-5-6-sol"], 8);
-    add(scores, ["gpt-5-6-terra"], 7);
-    add(scores, ["claude-sonnet-5", "gemini-3-5-flash"], 4);
-    signals.push(locale === "zh-TW" ? "網站需要結構與可運作的互動" : "The website needs structure and working interactions");
-  } else if (input.taskKind === "presentation") {
-    add(scores, ["claude-opus-5"], 8);
-    add(scores, ["gemini-3-1-pro"], 6);
-    add(scores, ["claude-opus-4-8", "claude-sonnet-5", "gpt-5-6-sol"], 5);
-    signals.push(locale === "zh-TW" ? "簡報需要視覺結構與素材理解" : "The presentation needs visual structure and source understanding");
-  } else if (input.taskKind === "poster") {
-    add(scores, ["gpt-5-6-sol"], 8);
-    add(scores, ["gpt-5-6-terra"], 6);
-    add(scores, ["claude-sonnet-5", "gemini-3-1-pro"], 5);
-    signals.push(locale === "zh-TW" ? "海報成品需要視覺理解與清楚層級" : "A poster artifact needs visual understanding and clear hierarchy");
-  } else if (input.taskKind === "image") {
-    add(scores, ["gpt-5-6-sol"], 8);
-    add(scores, ["gpt-5-6-terra"], 6);
-    add(scores, ["claude-sonnet-5", "gemini-3-1-pro"], 5);
-    signals.push(locale === "zh-TW" ? "圖片任務需要清楚描述構圖並操作 Kuse 的圖片工具" : "The image task needs clear composition directions and Kuse image-tool use");
-  } else if (input.taskKind === "research") {
-    add(scores, ["claude-opus-5"], 10);
-    add(scores, ["gpt-5-6-sol"], 9);
-    add(scores, ["claude-opus-4-8"], 6);
-    add(scores, ["claude-sonnet-5", "gemini-3-1-pro"], 4);
-    signals.push(locale === "zh-TW" ? "研究需要來源整合、推理與可查證結論" : "Research needs source synthesis, reasoning, and verifiable conclusions");
-  } else if (everydayTasks.includes(input.taskKind)) {
-    add(scores, ["gpt-5-6-terra"], 8);
-    add(scores, ["claude-sonnet-5"], 7);
-    add(scores, ["gpt-5-6-luna", "gemini-3-5-flash"], 4);
-    signals.push(locale === "zh-TW" ? "任務重視清楚文字與穩定初稿" : "The task prioritizes clear writing and a reliable draft");
-  } else if (complexTasks.includes(input.taskKind)) {
-    add(scores, ["gpt-5-6-sol"], 8);
-    add(scores, ["claude-opus-5"], 7);
-    add(scores, ["gpt-5-6-terra"], 5);
-    add(scores, ["claude-sonnet-5", "gemini-3-1-pro"], 4);
-    signals.push(locale === "zh-TW" ? "任務需要較深分析與多項限制整合" : "The task needs deeper analysis and constraint handling");
-  } else {
-    add(scores, ["gpt-5-6-terra"], 8);
-    add(scores, ["claude-sonnet-5"], 6);
-    add(scores, ["gpt-5-6-luna", "gemini-3-5-flash"], 3);
-    signals.push(locale === "zh-TW" ? "未指定固定類型，優先採用通用推理" : "No fixed task type is selected, so general reasoning is prioritized");
+  if (isImage) {
+    signals.push(signal("Image output uses Kuse's Image tab", "圖片成品使用 Kuse 的圖片分頁"));
+  } else if (needsDataAnalysis || taskKind === "research" || taskKind === "website") {
+    scores["gpt-6-1-sol"] = 10;
+    if (needsDataAnalysis) {
+      signals.push(signal("The task needs spreadsheet work or data analysis", "任務需要處理試算表或分析數據"));
+    }
+  } else if (isQuickEdit) {
+    scores["claude-haiku-5-5"] = 10;
+    signals.push(signal("The request is a small text or formatting fix", "只需簡單修訂文字或格式"));
   }
 
-  const hasDeepMultimodalSources = input.sources.some((source) => ["uploaded_pdf", "spreadsheet", "reference_image"].includes(source));
-  const genuinelyMultimodalTask = ["presentation", "poster", "image", "research", "report"].includes(input.taskKind);
-  if (hasDeepMultimodalSources && genuinelyMultimodalTask) {
-    add(scores, ["gemini-3-1-pro"], 7);
-    add(scores, ["gpt-5-6-sol"], 3);
-    signals.push(locale === "zh-TW" ? "任務同時需要理解 PDF、數據或視覺材料" : "The task genuinely combines PDF, data, or visual sources");
+  if (!isImage && !GEMINI_EXCLUDED.test(request) && (GEMINI_REQUEST.test(request) || MODEL_FALLBACK.test(request))) {
+    scores["gemini-3-8-flash"] = Math.max(...Object.values(scores)) - 1;
   }
 
-  if (input.sources.length >= 3 || input.materialDetails.length > 280) {
-    add(scores, ["claude-opus-5", "gpt-5-6-sol"], 3);
-    if (genuinelyMultimodalTask) add(scores, ["gemini-3-1-pro"], 3);
-    signals.push(locale === "zh-TW" ? "材料量較多，需要跨材料整理" : "The larger source set needs cross-source synthesis");
+  const choice = (model: ModelProfile, score: number): ModelChoice => ({
+    ...model,
+    score,
+    explanation: `${model.strength[locale]}${signal(". ", "。")}${model.tradeoff[locale]}`,
+  });
+  const allModels = MODELS.map((model) => choice(model, scores[model.id]))
+    .sort((a, b) => b.score - a.score);
+  const editsImage = isImage && IMAGE_EDIT.test(request);
+  const recommended = isImage ? choice(IMAGE_DEFAULT, 10) : allModels[0];
+  let alternative = allModels[1];
+  let alternativeLabel = signal("For a different balance, also consider", "想換一種取向，也可以考慮");
+
+  if (editsImage) {
+    alternative = choice(IMAGE_EDIT_ALTERNATIVE, 8);
+    alternativeLabel = signal("Alternative for editing an existing image", "編修既有圖片的備選");
+  } else if (isImage) {
+    alternative = {
+      ...allModels[0],
+      explanation: signal(
+        "Use Sonnet 5.5 to refine the image brief, composition, or poster copy before generating the image.",
+        "生成圖片前，可以用 Sonnet 5.5 整理畫面需求、構圖或海報文案。",
+      ),
+    };
+    alternativeLabel = signal("For preparing the image prompt", "撰寫圖片提示詞可用");
   }
-
-  if (input.taskKind === "website" && input.siteScope === "mvp") {
-    add(scores, ["gpt-5-6-terra"], 3);
-    add(scores, ["gpt-5-6-luna", "gemini-3-5-flash", "claude-sonnet-5"], 2);
-    signals.push(locale === "zh-TW" ? "採用快速 MVP，重視先完成可用小版本" : "Quick MVP mode favors a small usable first version");
-  }
-
-  if (input.taskKind === "website" && input.siteScope === "complete") {
-    add(scores, ["gpt-5-6-sol"], 3);
-    add(scores, ["claude-opus-5"], 2);
-    signals.push(locale === "zh-TW" ? "完整版本需要較高的規格整合能力" : "Complete mode needs stronger specification handling");
-  }
-
-  // Kang Chiao accounts have ample credits, so task fit and quality outrank cost.
-  add(scores, ["claude-opus-5", "gpt-5-6-sol"], 1);
-
-  const ranked = [...MODELS].sort((a, b) => scores[b.id] - scores[a.id]);
-  const focus = TASK_FOCUS[input.taskKind][locale];
-  const explain = (model: ModelProfile) => locale === "zh-TW"
-    ? `這次要做的是${focus}，選 ${model.name} 會比較順手。它的官方定位優勢是${model.strength[locale]}；不過${model.tradeoff[locale]}。`
-    : `You need ${focus}, so ${model.name} should feel like the smoother choice. Its official positioning emphasizes ${model.strength[locale]}; however, ${model.tradeoff[locale]}.`;
-
-  const recommended = ranked[0];
-  const alternative = ranked[1];
 
   return {
-    recommended: { ...recommended, score: scores[recommended.id], explanation: explain(recommended) },
-    alternative: { ...alternative, score: scores[alternative.id], explanation: explain(alternative) },
-    signals: signals.slice(0, 3),
-    method: locale === "zh-TW"
-      ? "依 Kuse 現行模型清單與原廠公開定位，綜合任務、材料與專案範圍推薦。Gemini 3.1 Pro 因流量較高先降低權重，只有進階多模態或長材料真的適合時才會升回來。"
-      : "The score uses Kuse's current model list, official vendor positioning, task, sources, and project scope. Gemini 3.1 Pro starts lower because of its heavier usage and rises only for genuinely suitable advanced multimodal or long-context work.",
-    alternativeLabel: locale === "zh-TW" ? "想換一種取向，也可以考慮" : "For a different balance, also consider",
-    availabilityNote: locale === "zh-TW"
-      ? "模型清單已依目前 Kuse 畫面更新；若 Kuse 日後調整版本，請以畫面中實際可用的模型為準。"
-      : "The model list matches the current Kuse screen. If Kuse changes its versions later, use the models actually available in the selector.",
-    allModels: ranked.map((model) => ({
-      ...model,
-      score: scores[model.id],
-      explanation: explain(model),
-    })),
+    recommended,
+    alternative,
+    signals,
+    method: signal(
+      "Recommendations weigh task fit and Kuse points. Kuse lists image models in a separate tab.",
+      "推薦依任務需求與 Kuse 點數評估。圖片模型列在 Kuse 的獨立分頁。",
+    ),
+    alternativeLabel,
+    availabilityNote: signal(
+      "The list matches the Kuse model menu as of 2026-11-27. Kuse shows each model's point multiplier in the selector.",
+      "模型清單依 2026-11-27 的 Kuse 選單整理。Kuse 會在選單中顯示各模型的點數倍率。",
+    ),
+    allModels,
   };
 }
