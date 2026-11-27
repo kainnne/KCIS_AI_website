@@ -19,7 +19,8 @@ export async function schoolRequest(path:string,body?:unknown,method?:string){
   const res=await fetch(base+'/api/auth/'+path,{method:method||(body===undefined?'GET':'POST'),credentials:'include',headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(['send-code','lookup'].includes(path)?75000:15000)});
   const data=await res.json().catch(()=>({}));
   if(!res.ok){if(res.status===401&&token&&path==='shared-session')storeToken('');throw Object.assign(Error(data.error||'連線失敗 / Connection failed.'),{status:res.status});}
-  if(path==='login-with-code'&&typeof data.token==='string')storeToken(data.token);
+  // Keep the newest token: login and every session check return a fresh week-long one.
+  if((path==='login-with-code'||path==='shared-session')&&typeof data.token==='string')storeToken(data.token);
   if(path==='logout')storeToken('');
   return data;
 }
