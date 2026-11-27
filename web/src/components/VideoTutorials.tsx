@@ -15,6 +15,9 @@ const duration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart
 const thumb = (id: string, size: 'hq' | 'maxres' = 'hq') => `https://i.ytimg.com/vi/${id}/${size}default.jpg`;
 const pick = (v: VideoLesson, lang: Lang): [VideoVersion, Lang] =>
   lang === 'en' ? (v.en ? [v.en, 'en'] : [v.zh!, 'zh']) : (v.zh ? [v.zh, 'zh'] : [v.en!, 'en']);
+// In the English interface a Chinese-only video shows its English title and plays with English captions.
+const captioned = (v: VideoLesson, videoLang: Lang, uiLang: Lang) => uiLang === 'en' && videoLang === 'zh' && Boolean(v.titleEn);
+const titleFor = (v: VideoLesson, ver: VideoVersion, videoLang: Lang, uiLang: Lang) => captioned(v, videoLang, uiLang) ? v.titleEn! : ver.title;
 
 export function VideoTutorials() {
   const { locale, t } = useI18n();
@@ -81,7 +84,7 @@ function Library() {
     const q = query.trim().toLowerCase();
     return SERIES.filter(s => filter === 'all' || s.id === filter).map(s => ({
       series: s,
-      items: VIDEOS.filter(v => v.series === s.id).filter(v => !q || [v.zh?.title, v.en?.title, v.number, s.zh, s.en]
+      items: VIDEOS.filter(v => v.series === s.id).filter(v => !q || [v.zh?.title, v.en?.title, v.titleEn, v.number, s.zh, s.en]
         .some(x => x?.toLowerCase().includes(q))),
     })).filter(g => g.items.length);
   }, [filter, query]);
@@ -100,23 +103,23 @@ function Library() {
         {playing
           ? <iframe
               key={version.id}
-              src={`https://www.youtube-nocookie.com/embed/${version.id}?autoplay=1&rel=0&playsinline=1&hl=${uiLang === 'en' ? 'en' : 'zh-TW'}`}
-              title={version.title}
+              src={`https://www.youtube-nocookie.com/embed/${version.id}?autoplay=1&rel=0&playsinline=1&hl=${uiLang === 'en' ? 'en' : 'zh-TW'}${captioned(current, versionLang, uiLang) ? '&cc_load_policy=1&cc_lang_pref=en' : ''}`}
+              title={titleFor(current, version, versionLang, uiLang)}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen />
-          : <button type="button" className={styles.poster} onClick={() => setPlaying(true)} aria-label={text('Play: ', '播放：') + version.title}>
+          : <button type="button" className={styles.poster} onClick={() => setPlaying(true)} aria-label={text('Play: ', '播放：') + titleFor(current, version, versionLang, uiLang)}>
               <img src={thumb(version.id, 'maxres')} alt="" onError={e => { const img = e.currentTarget; if (!img.src.includes('/hqdefault')) img.src = thumb(version.id); }} />
               <span className={styles.play} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" /></svg>{text('Play', '播放')}</span>
             </button>}
       </div>
       <div className={styles.info}>
         <p className={styles.series}>{seriesName(current.series)}{label(current) && <span>{label(current)}</span>}</p>
-        <h2 lang={versionLang === 'en' ? 'en' : 'zh-Hant'}>{version.title}</h2>
+        <h2 lang={versionLang === 'en' || captioned(current, versionLang, uiLang) ? 'en' : 'zh-Hant'}>{titleFor(current, version, versionLang, uiLang)}</h2>
         <ul className={styles.meta}>
           <li>{duration(version.seconds)}</li>
           {current.level && <li>Level {current.level}</li>}
-          {versionLang !== uiLang && <li>{languageLabel(versionLang)}</li>}
+          {versionLang !== uiLang && <li>{captioned(current, versionLang, uiLang) ? 'Chinese audio · English subtitles' : languageLabel(versionLang)}</li>}
         </ul>
         {current.zh && current.en && <div className={styles.versions} role="group" aria-label={text('Video language', '影片語言')}>
           {(['zh', 'en'] as Lang[]).map(l => <button key={l} type="button" aria-pressed={versionLang === l}
@@ -168,9 +171,9 @@ function Library() {
                 {(label(v) || v.level || lang !== uiLang) && <span className={styles.cardMeta}>
                   {label(v) && <b>{label(v)}</b>}
                   {v.level && <span>Level {v.level}</span>}
-                  {lang !== uiLang && <span>{languageLabel(lang)}</span>}
+                  {lang !== uiLang && <span>{captioned(v, lang, uiLang) ? 'Chinese audio · English subtitles' : languageLabel(lang)}</span>}
                 </span>}
-                <span className={styles.cardTitle} lang={lang === 'en' ? 'en' : 'zh-Hant'}>{ver.title}</span>
+                <span className={styles.cardTitle} lang={lang === 'en' || captioned(v, lang, uiLang) ? 'en' : 'zh-Hant'}>{titleFor(v, ver, lang, uiLang)}</span>
               </span>
             </button>
           </li>;
