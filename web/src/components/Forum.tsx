@@ -1,4 +1,5 @@
 'use client';
+import { KcisAssistant } from "./KcisAssistant";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import styles from './Forum.module.css';
@@ -121,7 +122,7 @@ export function Forum() {
     setSolving(false);setThread(null);setReplies([]);setEdit(null);setReplyDraft('');replyKey.current='';await loadQuestions();
   }
 
-  return <><SiteHeader onManage={entered&&adminSession&&!adminOpen?()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}:undefined}/><div className={styles.forum} lang="en">
+  return <><KcisAssistant feature="forum"/><SiteHeader onManage={entered&&adminSession&&!adminOpen?()=>{if((draft||replyDraft||edit)&&!window.confirm(t('捨棄未儲存的內容？','Discard unsaved changes?')))return;setDraft('');setReplyDraft('');setEdit(null);setComposing(false);questionKey.current='';replyKey.current='';setAdminOpen(true);}:undefined}/><div className={styles.forum} lang="en">
     <main className={!entered?styles.entryWorkspace:thread?styles.threadWorkspace:styles.workspace} aria-busy={busy||!sessionReady}>
       {error&&!adminOpen&&<div role="alert" className={styles.error}><span>{errors[error]?.[locale==='en'?1:0]||t(errors.unavailable[0],errors.unavailable[1])}</span><button disabled={busy} onClick={()=>void run(async()=>{if(entered){if(thread)await fetchThread(thread.id);else await loadQuestions();}})}>{t('重新載入','Reload')}</button></div>}
       {!sessionReady?<p role="status" className={styles.empty}>Checking account…</p>:!entered?<section className={styles.entry} aria-labelledby="forum-entry-title">

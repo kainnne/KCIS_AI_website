@@ -1,4 +1,5 @@
 "use client";
+import { KcisAssistant } from './KcisAssistant';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from './SiteHeader';
@@ -22,6 +23,7 @@ export function VideoTutorials() {
 
   return <div className="kc-shell">
     <SiteHeader />
+    <KcisAssistant feature="videos" />
     <main className={styles.page} aria-busy={!ready}>
       {!ready || error || !session ? <div className={styles.gate}>
         <h1 className={styles.title}>{t.hub.videos.title}</h1>

@@ -24,7 +24,16 @@ const ICON_WIDE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v
 const ICON_NARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10h-6V4M4 14h6v6M14 10l6.5-6.5M10 14l-6.5 6.5"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
-export function mountHelper({apiBase, token, context, lang, t}) {
+// A random id kept in this browser, so guests sharing one school network are limited separately.
+function clientId() {
+  try {
+    let id = localStorage.getItem('kcis-ai-client');
+    if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join(''); localStorage.setItem('kcis-ai-client', id); }
+    return id;
+  } catch { return ''; }
+}
+
+export function mountHelper({apiBase, token, context, lang, t, feature = 'ai901'}) {
   if (!apiBase) return {show() {}, hide() {}, question() {}};
   const threads = new Map();
   let current = null, busy = false, open = false;
@@ -34,7 +43,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
   root.hidden = true;
   root.innerHTML = `<button type="button" class="helper-fab" aria-expanded="false" aria-controls="helper-panel">${ICON_CHAT}<span></span></button>
 <section id="helper-panel" class="helper-panel" role="dialog" aria-modal="false" aria-labelledby="helper-title" hidden>
-  <header class="helper-head"><div><p class="helper-eyebrow">AI-901</p><h2 id="helper-title"></h2></div><div class="helper-actions"><button type="button" class="helper-size"></button><button type="button" class="helper-close">${ICON_CLOSE}</button></div></header>
+  <header class="helper-head"><div><p class="helper-eyebrow"></p><h2 id="helper-title"></h2></div><div class="helper-actions"><button type="button" class="helper-size"></button><button type="button" class="helper-close">${ICON_CLOSE}</button></div></header>
   <div class="helper-log" aria-live="polite"></div>
   <div class="helper-chips"></div>
   <form class="helper-form"><label class="sr-only" for="helper-input"></label><textarea id="helper-input" rows="1" maxlength="1500"></textarea><button type="submit" class="helper-send">${ICON_SEND}</button></form>
@@ -48,6 +57,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
     fab.querySelector('span').textContent = t('helper');
     fab.setAttribute('aria-label', t('helperOpen'));
     root.querySelector('#helper-title').textContent = t('helperTitle');
+    root.querySelector('.helper-eyebrow').textContent = t('helperEyebrow') === 'helperEyebrow' || !t('helperEyebrow') ? 'AI-901' : t('helperEyebrow');
     root.querySelector('.helper-close').setAttribute('aria-label', t('helperClose'));
     sizeLabel();
     root.querySelector('label').textContent = t('helperAsk');
@@ -105,7 +115,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
     const q = current, reply = {role: 'assistant', content: ''};
     try {
       const response = await fetch(`${apiBase}/api/assistant`, {method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({token: token() ?? undefined, questionId: q, site: location.hostname, lang: lang(), turn: thread.filter(m => m.role === 'user').length, context: context(),
+        body: JSON.stringify({token: token() ?? undefined, feature: typeof feature === 'function' ? feature() : feature, client: clientId(), questionId: q, site: location.hostname, lang: lang(), turn: thread.filter(m => m.role === 'user').length, context: context(),
           messages: thread.filter(m => !m.error).slice(-8).map(({role, content}) => ({role, content}))})});
       if (!response.ok || !(response.headers.get('Content-Type') || '').includes('event-stream')) {
         const data = await response.json().catch(() => ({}));
@@ -144,6 +154,7 @@ export function mountHelper({apiBase, token, context, lang, t}) {
   labels();
   return {
     show() { root.hidden = false; labels(); if (open) draw(); },
+    refresh() { labels(); if (open) draw(); },
     hide() { root.hidden = true; if (open) setOpen(false); },
     question(id) { current = id; if (open) draw(); },
   };

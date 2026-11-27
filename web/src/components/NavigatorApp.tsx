@@ -23,6 +23,7 @@ import { OptionCard, StepPanel } from "./OptionCard";
 import { ProgressBar } from "./ProgressBar";
 
 import { SiteHeader } from "./SiteHeader";
+import { KcisAssistant } from "./KcisAssistant";
 
 function FeatureLoading(){const {locale}=useI18n();return <p role="status" className="mx-auto max-w-5xl px-6 py-10 text-center text-kc-muted">{locale==='en'?'Loading…':'載入中…'}</p>;}
 const KusePromptBuilder=dynamic(()=>import('./KusePromptBuilder').then(module=>module.KusePromptBuilder),{loading:FeatureLoading});
@@ -132,6 +133,14 @@ export function NavigatorApp() {
     <div className="kc-shell">
       <SketchbookBackground quiet={mode !== "hub"} />
       <SiteHeader onHome={mode === "hub" ? undefined : openHome} showLanguage={mode !== "hub"} />
+      <KcisAssistant
+        feature={mode === "hub" ? "home" : mode}
+        context={() => mode === "navigator" ? {
+          navigatorStep: step,
+          choices: { role: need.role, level: need.level, department: need.department, task: need.task, keywords: need.keywords, freeOnly: need.freeOnly },
+          recommended: step === "results" ? ranked.map((item) => item.tool.name) : undefined,
+        } : {}}
+      />
 
       {mode === "navigator" && step !== "welcome" && step !== "results" ? (
         <ProgressBar stepIndex={progressIndex} total={progressTotal} />
